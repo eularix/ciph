@@ -1,0 +1,46 @@
+---
+title: Ciph Documentation
+description: Transparent HTTP encryption for frontend-backend communication.
+---
+
+# Ciph
+
+Ciph is a transparent HTTP encryption library for frontend–backend communication.
+
+It protects request and response bodies at the application layer while keeping developer ergonomics unchanged. You keep writing normal API code; Ciph handles encryption, decryption, and fingerprint-bound key derivation automatically.
+
+## Why Ciph
+
+- Network payloads are ciphertext in browser DevTools
+- No manual encrypt/decrypt calls in app code
+- Works as client and server middleware
+- Framework-friendly architecture across client and server packages
+
+## Package Overview
+
+- **@ciph/core** — cryptographic primitives (AES-256-GCM, HKDF, fingerprint utilities)
+- **@ciph/client** — transparent HTTP client wrapper
+- **@ciph/hono** — Hono middleware for server-side decrypt/encrypt flow
+- **@ciph/devtools-client** — in-app floating panel for client-side inspection (development only)
+- **@ciph/devtools-server** — server inspector at `/ciph` via SSE (development only)
+
+## Documentation Map
+
+- **Getting Started**
+  - Install and setup
+  - Environment configuration
+  - First client/server integration
+
+- **How It Works**
+  - Encryption model
+  - Fingerprint flow
+  - Request/response lifecycle
+
+- **Reference**
+  - Error codes (`CIPH001`–`CIPH006`)
+  - Core API
+  - Client API
+  - Hono middleware API
+  - Devtools APIs
+
+Use the sidebar to navigate each package section.

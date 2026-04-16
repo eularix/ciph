@@ -1,0 +1,36 @@
+---
+title: Hono API
+description: Complete TypeScript API for @ciph/hono middleware.
+---
+
+# Hono API
+
+## `ciph(config)`
+
+```ts
+interface CiphHonoConfig {
+  secret: string
+  excludeRoutes?: string[]
+  strictFingerprint?: boolean
+  maxPayloadSize?: number // bytes
+}
+
+app.use("*", ciph({ secret: process.env.CIPH_SECRET! }))
+```
+
+## `ciphExclude()`
+
+```ts
+app.get("/health", ciphExclude(), (c) => {
+  return c.json({ status: "ok" })
+})
+```
+
+## Devtools
+
+```ts
+app.route("/ciph", ciphDevServer({ secret: process.env.CIPH_SECRET! }))
+```
+
+## Next: Devtools Client
+[Devtools Client →](/docs/devtools/client)

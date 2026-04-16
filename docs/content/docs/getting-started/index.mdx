@@ -1,0 +1,117 @@
+---
+title: Getting Started
+description: Install Ciph and make your first encrypted API call in 5 minutes.
+---
+
+# Getting Started
+
+## Prerequisites
+
+- Node.js 18+ or Bun
+- `CIPH_SECRET` environment variable (32+ characters, identical on client/server)
+
+```bash
+# .env.local (client)
+VITE_CIPH_SECRET=your-32-char-minimum-secret-here
+
+# .env (server)  
+CIPH_SECRET=your-32-char-minimum-secret-here
+```
+
+## Installation
+
+```bash
+pnpm add @ciph/core @ciph/client axios
+# or
+npm install @ciph/core @ciph/client axios
+```
+
+**Server (Hono):**
+```bash
+pnpm add @ciph/core @ciph/hono hono
+```
+
+## Client Setup
+
+Create `lib/ciph.ts`:
+
+```ts
+// lib/ciph.ts
+import { createClient } from "@ciph/client"
+
+export const ciph = createClient({
+  baseURL: import.meta.env.VITE_API_URL,
+  secret: import.meta.env.VITE_CIPH_SECRET,
+})
+```
+
+**Usage (identical to axios):**
+
+```ts
+// services/materials.ts
+import { ciph } from "@/lib/ciph"
+
+// GET (no body encryption, fingerprint header only)
+export const listMaterials = async () => {
+  const res = await ciph.get("/materials")
+  return res.data
+}
+
+// POST (body auto-encrypted)
+export const createMaterial = async (payload: CreateMaterialDto) => {
+  const res = await ciph.post("/materials", payload)
+  return res.data
+}
+```
+
+## Server Setup (Hono)
+
+```ts
+// server.ts
+import { Hono } from "hono"
+import { ciph } from "@ciph/hono"
+
+const app = new Hono()
+
+app.use("*", ciph({
+  secret: process.env.CIPH_SECRET!,
+}))
+
+app.get("/materials", async (c) => {
+  // c.req.json() returns plain object (already decrypted)
+  const materials = await db.materials.findMany()
+  return c.json({ data: materials }) // auto-encrypted before send
+})
+
+export default app
+```
+
+## Devtools (Optional)
+
+**Client-side floating panel:**
+```tsx
+// App.tsx
+import { CiphDevtools } from "@ciph/devtools-client"
+
+function App() {
+  return (
+    <>
+      <YourApp />
+      <CiphDevtools /> {/* vanishes in production */}
+    </>
+  )
+}
+```
+
+**Server inspector:**
+```ts
+// After ciph middleware
+app.route("/ciph", ciphDevServer({ secret: process.env.CIPH_SECRET! }))
+```
+Open `http://localhost:3000/ciph` for server logs.
+
+## Next Steps
+
+- [Read How It Works →](/docs/how-it-works)
+- [Error Codes →](/docs/error-codes) 
+- [Core API →](/docs/core/api)

@@ -1,0 +1,57 @@
+---
+title: Client API
+description: Complete TypeScript API for @ciph/client.
+---
+
+# Client API
+
+## `createClient(config)`
+
+```ts
+interface CiphClientConfig {
+  baseURL: string
+  secret: string
+  fingerprintOptions?: {
+    includeScreen?: boolean
+    includeTimezone?: boolean
+    customFields?: Record<string, string>
+  }
+  excludeRoutes?: string[] // ["/health"]
+  onFingerprintMismatch?: "retry" | "throw" | "ignore"
+}
+
+const ciph = createClient(config)
+```
+
+## HTTP Methods
+
+**Identical to axios:**
+
+```ts
+ciph.get<T>("/users")
+ciph.post<T>("/users", data)
+ciph.put<T>("/users/:id", data)
+ciph.patch<T>("/users/:id", data)
+ciph.delete<T>("/users/:id")
+```
+
+**Returns `CiphResponse<T>`:**
+
+```ts
+interface CiphResponse<T> {
+  data: T // plain, decrypted
+  status: number
+  ciph: {
+    coinsUsed?: number
+  }
+}
+```
+
+## Devtools
+
+```tsx
+<CiphDevtools /> // floating panel, dev-only
+```
+
+## Next: Hono Package
+[Hono Middleware →](/docs/hono)

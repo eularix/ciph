@@ -1,0 +1,36 @@
+---
+title: Client Package
+description: Transparent HTTP client with automatic encryption/decryption.
+---
+
+# @ciph/client
+
+Drop-in axios replacement with transparent encryption.
+
+## Quick Start
+
+```ts
+import { createClient } from "@ciph/client"
+
+export const ciph = createClient({
+  baseURL: "https://api.example.com",
+  secret: import.meta.env.VITE_CIPH_SECRET,
+})
+```
+
+**Usage (identical to axios):**
+
+```ts
+const res = await ciph.post("/users", { name: "Alice" })
+console.log(res.data) // plain object, auto-decrypted
+```
+
+## Key Features
+
+- Zero-config encryption/decryption
+- Fingerprint caching (0ms after first request)
+- Auto-retry on fingerprint mismatch
+- Devtools integration (development only)
+
+## Next: Client API
+[Full API →](/docs/client/api)

@@ -1,0 +1,45 @@
+{
+  "name": "@ciph/devtools-server",
+  "version": "0.1.0",
+  "description": "Standalone devtools server for Ciph - captures server logs via globalThis.ciphServerEmitter, exposes WebSocket + REST API",
+  "main": "./dist/index.cjs",
+  "module": "./dist/index.js",
+  "types": "./dist/index.d.ts",
+  "type": "commonjs",
+  "exports": {
+    ".": {
+      "types": "./dist/index.d.ts",
+      "import": "./dist/index.js",
+      "require": "./dist/index.cjs"
+    }
+  },
+  "files": [
+    "dist"
+  ],
+  "scripts": {
+    "typecheck": "tsc --noEmit",
+    "test": "vitest --reporter=verbose",
+    "build": "tsup",
+    "dev": "tsup --watch"
+  },
+  "peerDependencies": {
+    "@ciph/core": "workspace:^"
+  },
+  "devDependencies": {
+    "@types/node": "^22.5.5",
+    "@types/ws": "^8.5.12",
+    "typescript": "^5.5.4",
+    "tsup": "^8.2.4",
+    "vitest": "^2.0.5",
+    "ws": "^8.18.0"
+  },
+  "keywords": [
+    "ciph",
+    "devtools",
+    "hono",
+    "websocket",
+    "debug"
+  ],
+  "author": "",
+  "license": "MIT"
+}

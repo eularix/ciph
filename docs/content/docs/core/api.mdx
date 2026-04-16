@@ -1,0 +1,66 @@
+---
+title: Core API
+description: Complete TypeScript API reference for @ciph/core primitives.
+---
+
+# Core API
+
+## Configuration
+
+```ts
+interface CiphCoreConfig {
+  secret: string
+  fingerprintOptions?: FingerprintOptions
+}
+```
+
+## Fingerprint
+
+```ts
+interface FingerprintComponents {
+  userAgent?: string
+  screen?: string
+  timezone?: string
+  [key: string]: string | undefined
+}
+
+interface FingerprintResult {
+  fingerprint: string // SHA-256 hex
+  components: FingerprintComponents
+}
+
+generateFingerprint(
+  components: FingerprintComponents
+): Promise<FingerprintResult>
+```
+
+## Encryption
+
+```ts
+interface EncryptResult {
+  ciphertext: string // base64url(IV + AuthTag + data)
+  iv: string
+}
+
+encrypt(plaintext: string, key: string): Promise<EncryptResult>
+decrypt(ciphertext: string, key: string): Promise<string>
+```
+
+## Key Derivation
+
+```ts
+deriveKey(secret: string, fingerprint: string): Promise<string>
+// Returns 32-byte AES-256 key
+```
+
+## Errors
+
+```ts
+class CiphError extends Error {
+  code: CiphErrorCode // "CIPH001" | "CIPH002" | ...
+  message: string
+}
+```
+
+## Next: Client Package
+[Client API →](/docs/client)

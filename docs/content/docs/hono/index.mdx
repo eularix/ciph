@@ -1,0 +1,51 @@
+---
+title: Hono Package
+description: Server-side middleware for transparent decrypt/encrypt flow.
+---
+
+# @ciph/hono
+
+Hono middleware — decrypts incoming requests, encrypts outgoing responses.
+
+## Setup
+
+```ts
+import { Hono } from "hono"
+import { ciph } from "@ciph/hono"
+
+const app = new Hono()
+
+app.use("*", ciph({
+  secret: process.env.CIPH_SECRET!,
+}))
+
+app.post("/users", async (c) => {
+  // c.req.json() = plain object (auto-decrypted)
+  const user = await db.users.create(c.req.json())
+  return c.json(user) // auto-encrypted
+})
+```
+
+## Exclude Routes
+
+```ts
+ciph({
+  secret: process.env.CIPH_SECRET!,
+  excludeRoutes: ["/health", "/public/*"]
+})
+```
+
+## Devtools Server
+
+```ts
+import { ciphDevServer } from "@ciph/devtools-server"
+
+app.route("/ciph", ciphDevServer({
+  secret: process.env.CIPH_SECRET!,
+}))
+```
+
+Open `http://localhost:3000/ciph` for inspector.
+
+## Next: Devtools
+[Devtools →](/docs/devtools/client)

@@ -1,0 +1,55 @@
+---
+title: Error Codes
+description: Complete reference for CIPH001–CIPH006 error codes and handling.
+---
+
+# Error Codes
+
+All Ciph errors use structured codes `CIPH001`–`CIPH006` for predictable handling.
+
+## Error Code Table
+
+| Code    | HTTP | Trigger                                    | Client Action                  |
+|---------|------|--------------------------------------------|--------------------------------|
+| CIPH001 | 401  | Missing `X-Fingerprint` header             | Configuration error            |
+| CIPH002 | 401  | Fingerprint decrypt failed (wrong secret)  | Configuration error            |
+| CIPH003 | 401  | Fingerprint mismatch (IP/UA changed)       | Auto-retry once (default)      |
+| CIPH004 | 400  | Request body decrypt failed                | Data integrity error           |
+| CIPH005 | 413  | Payload too large                          | Reduce payload size            |
+| CIPH006 | 500  | Response encrypt failed                    | Server error                   |
+
+## Error Response Format
+
+```json
+{
+  "code": "CIPH003",
+  "message": "Fingerprint mismatch: IP address changed"
+}
+```
+
+## Client Handling
+
+```ts
+import { CiphError } from "@ciph/core"
+
+try {
+  await ciph.post("/employees", data)
+} catch (err) {
+  if (err instanceof CiphError) {
+    switch (err.code) {
+      case "CIPH003":
+        // Auto-retried once already - show refresh message
+        toast("Session expired. Please refresh.")
+        break
+      case "CIPH001":
+      case "CIPH002":
+        // Config error - log to Sentry
+        console.error("Ciph misconfiguration:", err.message)
+        break
+    }
+  }
+}
+```
+
+## Next: Core API
+[Core Primitives →](/docs/core)

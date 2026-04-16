@@ -1,0 +1,52 @@
+{
+  "name": "@ciph/devtools-client",
+  "version": "0.1.0",
+  "type": "module",
+  "description": "Ciph DevTools client for inspecting encrypted HTTP traffic",
+  "main": "./dist/index.js",
+  "module": "./dist/index.js",
+  "types": "./dist/index.d.ts",
+  "exports": {
+    ".": {
+      "types": "./dist/index.d.ts",
+      "import": "./dist/index.js",
+      "default": "./dist/index.cjs"
+    }
+  },
+  "files": [
+    "dist"
+  ],
+  "scripts": {
+    "build": "tsup src/index.ts --format esm,cjs --dts",
+    "dev": "tsup src/index.ts --format esm,cjs --watch --dts",
+    "test": "vitest run",
+    "test:watch": "vitest",
+    "typecheck": "tsc --noEmit"
+  },
+  "peerDependencies": {
+    "@ciph/core": "workspace:*"
+  },
+  "devDependencies": {
+    "@ciph/core": "workspace:*",
+    "@types/node": "^22.7.4",
+    "typescript": "^5.6.3",
+    "tsup": "^8.2.4",
+    "vitest": "^2.0.5",
+    "@vitest/ui": "^2.0.5",
+    "jsdom": "^24.1.1"
+  },
+  "dependencies": {},
+  "keywords": [
+    "ciph",
+    "devtools",
+    "encryption",
+    "http",
+    "debugging"
+  ],
+  "author": "",
+  "license": "MIT",
+  "sideEffects": false,
+  "publishConfig": {
+    "access": "public"
+  }
+}

@@ -1,0 +1,85 @@
+---
+title: How It Works
+description: Architecture overview of Ciph's transparent encryption model.
+---
+
+# How It Works
+
+Ciph adds an application-layer encryption layer on top of HTTPS using per-device keys.
+
+## Core Concepts
+
+### 1. Shared Secret (`CIPH_SECRET`)
+
+32+ character secret identical on client/server:
+```
+Client: VITE_CIPH_SECRET=your-secret-here
+Server: CIPH_SECRET=your-secret-here
+```
+
+### 2. Device Fingerprint
+
+SHA-256 hash of:
+```
+{
+  "userAgent": "Mozilla/5.0...",
+  "screen": "1920x1080",
+  "timezone": "Asia/Jakarta"
+}
+```
+
+**Cached in memory** per browser tab (not localStorage).
+
+### 3. Key Derivation
+
+```
+AES-256-GCM Key = HKDF(CIPH_SECRET, fingerprint)
+```
+
+Each device gets unique encryption key.
+
+### 4. Request Flow
+
+```
+1. Client generates fingerprint F
+2. Encrypt F → X-Fingerprint header  
+3. Derive key K = HKDF(CIPH_SECRET, F)
+4. Encrypt body → ciphertext
+5. Send: X-Fingerprint + ciphertext body
+
+6. Server decrypts X-Fingerprint → F
+7. Validate F (IP/UA match)
+8. Derive K = HKDF(CIPH_SECRET, F)
+9. Decrypt body → plain object
+10. Process request → encrypt response → send
+```
+
+## Visual Flow
+
+```
+Client                          Server
+  │                                │
+  │ GET /materials                 │
+  │ X-Fingerprint: [encrypted F]   │
+  │------------------------------->│
+  │                                │ 1. Decrypt F
+  │                                │ 2. Validate IP/UA
+  │                                │ 3. Derive K
+  │                                │ 4. Return {data: [...]}
+  │<-------------------------------│ ciphertext
+  │                                │
+  │ Decrypt → plain data           │
+```
+
+## Security Model
+
+✅ **Device-bound keys** — fingerprint prevents replay from other devices  
+✅ **Authenticated encryption** — AES-GCM detects tampering  
+✅ **Fresh IV per request** — no reuse attacks  
+✅ **No plain data in logs** — devtools only in development  
+
+❌ **Not TLS replacement** — use HTTPS + Ciph  
+❌ **Not auth solution** — use JWT/OAuth alongside  
+
+## Next: Error Codes
+[Error Reference →](/docs/error-codes)
