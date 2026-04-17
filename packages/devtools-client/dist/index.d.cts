@@ -1,4 +1,5 @@
 import { CiphServerLog, CiphClientLog, CiphErrorCode } from '@ciph/core';
+import * as react_jsx_runtime from 'react/jsx-runtime';
 
 interface CiphDevtoolsOptions {
     maxLogs?: number;
@@ -41,4 +42,13 @@ declare class CiphDevtoolsClient {
     isConnected(): boolean;
 }
 
-export { CiphDevtoolsClient, type CiphDevtoolsOptions, type CiphDevtoolsStats, type CiphLogEntry, type CiphLogSource };
+interface CiphDevtoolsProps extends CiphDevtoolsOptions {
+    position?: 'bottom-right' | 'bottom-left' | 'top-right' | 'top-left';
+    defaultOpen?: boolean;
+    shortcut?: string | null;
+    disabled?: boolean;
+}
+declare function DevtoolsComponent(props: CiphDevtoolsProps): react_jsx_runtime.JSX.Element | null;
+declare const CiphDevtools: typeof DevtoolsComponent;
+
+export { CiphDevtools, CiphDevtoolsClient, type CiphDevtoolsOptions, type CiphDevtoolsProps, type CiphDevtoolsStats, type CiphLogEntry, type CiphLogSource };

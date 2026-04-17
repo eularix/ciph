@@ -24,16 +24,22 @@
     "typecheck": "tsc --noEmit"
   },
   "peerDependencies": {
-    "@ciph/core": "workspace:*"
+    "@ciph/core": "workspace:*",
+    "react": ">=18.0.0",
+    "react-dom": ">=18.0.0"
   },
   "devDependencies": {
     "@ciph/core": "workspace:*",
     "@types/node": "^22.7.4",
+    "@types/react": "^18.3.11",
+    "@types/react-dom": "^18.3.0",
     "typescript": "^5.6.3",
     "tsup": "^8.2.4",
     "vitest": "^2.0.5",
     "@vitest/ui": "^2.0.5",
-    "jsdom": "^24.1.1"
+    "jsdom": "^24.1.1",
+    "react": "^18.3.1",
+    "react-dom": "^18.3.1"
   },
   "dependencies": {},
   "keywords": [
@@ -45,8 +51,8 @@
   ],
   "author": "",
   "license": "MIT",
-  "sideEffects": false,
   "publishConfig": {
     "access": "public"
-  }
+  },
+  "sideEffects": false
 }

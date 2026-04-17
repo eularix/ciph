@@ -266,8 +266,6 @@ function ciph(config) {
         key = await core.deriveKey(secret, fingerprint);
       }
       const encryptFn = _testOverrides?.encrypt ?? core.encrypt;
-      console.log("[CIPH DEBUG] _testOverrides:", _testOverrides);
-      console.log("[CIPH DEBUG] encryptFn is override:", encryptFn !== core.encrypt);
       const encrypted = await encryptFn(plainResponseText, key);
       state.encryptedResponseBody = encrypted.ciphertext;
       c.res = new Response(encrypted.ciphertext, {

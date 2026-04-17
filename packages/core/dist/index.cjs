@@ -33,7 +33,6 @@ __export(index_exports, {
   validateFingerprint: () => validateFingerprint
 });
 module.exports = __toCommonJS(index_exports);
-var import_node_crypto = require("crypto");
 
 // src/types.ts
 var CiphError = class extends Error {
@@ -48,7 +47,14 @@ var CiphError = class extends Error {
 };
 
 // src/index.ts
-var cryptoApi = globalThis.crypto ?? import_node_crypto.webcrypto;
+function getCryptoApi() {
+  if (typeof globalThis.crypto !== "undefined") {
+    return globalThis.crypto;
+  }
+  const { webcrypto } = require("crypto");
+  return webcrypto;
+}
+var cryptoApi = getCryptoApi();
 var encoder = new TextEncoder();
 function asBufferSource(bytes) {
   const out = new Uint8Array(bytes.byteLength);

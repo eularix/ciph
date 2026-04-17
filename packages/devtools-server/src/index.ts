@@ -19,6 +19,8 @@ const DEFAULT_MAX_LOGS = 500
 const BASE_PATH = '/ciph-devtools'
 
 export { CiphDevtoolsServerOptions, CiphDevtoolsStats } from './types'
+export { ciphDevServer } from './hono/ciphDevServer'
+export type { CiphDevServerConfig } from './hono/ciphDevServer'
 
 export class CiphDevtoolsServer {
   private readonly port: number

@@ -1,4 +1,5 @@
 import { CiphServerLog } from '@ciph/core';
+import { Hono } from 'hono';
 
 interface CiphDevtoolsServerOptions {
     port?: number;
@@ -11,6 +12,14 @@ interface CiphDevtoolsStats {
     activeConnections: number;
     uptimeMs: number;
 }
+
+interface CiphDevServerConfig {
+    secret: string;
+    maxLogs?: number;
+    password?: string;
+    disabled?: boolean;
+}
+declare function ciphDevServer(config: CiphDevServerConfig): Hono;
 
 interface CiphServerEmitterLike {
     on(event: 'log', listener: (payload: CiphServerLog) => void): void;
@@ -43,4 +52,4 @@ declare class CiphDevtoolsServer {
     private isOriginAllowed;
 }
 
-export { CiphDevtoolsServer, type CiphDevtoolsServerOptions, type CiphDevtoolsStats };
+export { type CiphDevServerConfig, CiphDevtoolsServer, type CiphDevtoolsServerOptions, type CiphDevtoolsStats, ciphDevServer };

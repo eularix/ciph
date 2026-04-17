@@ -1,0 +1,62 @@
+{
+  "title": "Ciph Documentation",
+  "description": "Transparent HTTP encryption for frontend-backend communication.",
+  "nav": [
+    {
+      "title": "Get Started",
+      "href": "/docs"
+    },
+    {
+      "title": "Installation",
+      "href": "/docs/getting-started/installation"
+    },
+    {
+      "type": "category",
+      "title": "Client",
+      "items": [
+        {
+          "title": "Client",
+          "href": "/docs/client"
+        },
+        {
+          "title": "Vue (soon)",
+          "href": "/docs/client/vue",
+          "disabled": true
+        }
+      ]
+    },
+    {
+      "type": "category",
+      "title": "Server",
+      "items": [
+        {
+          "title": "Hono",
+          "href": "/docs/hono"
+        },
+        {
+          "title": "Nest (soon)",
+          "href": "/docs/server/nest",
+          "disabled": true
+        }
+      ]
+    },
+    {
+      "title": "Error Codes",
+      "href": "/docs/error-codes"
+    },
+    {
+      "type": "category",
+      "title": "Devtools",
+      "items": [
+        {
+          "title": "Client",
+          "href": "/docs/devtools/client"
+        },
+        {
+          "title": "Server",
+          "href": "/docs/devtools/server"
+        }
+      ]
+    }
+  ]
+}

@@ -19,6 +19,9 @@
     "test:watch": "vitest",
     "type-check": "tsc --noEmit"
   },
+  "publishConfig": {
+    "access": "public"
+  },
   "devDependencies": {
     "@types/node": "^22.19.17",
     "tsup": "^8.3.0",

@@ -23,15 +23,18 @@
     "dev": "tsup --watch"
   },
   "peerDependencies": {
-    "@ciph/core": "workspace:^"
+    "@ciph/core": "workspace:^",
+    "hono": ">=4.0.0"
   },
   "devDependencies": {
+    "@ciph/core": "workspace:*",
     "@types/node": "^22.5.5",
     "@types/ws": "^8.5.12",
     "typescript": "^5.5.4",
     "tsup": "^8.2.4",
     "vitest": "^2.0.5",
-    "ws": "^8.18.0"
+    "ws": "^8.18.0",
+    "hono": "^4.12.14"
   },
   "keywords": [
     "ciph",
@@ -41,5 +44,8 @@
     "debug"
   ],
   "author": "",
-  "license": "MIT"
+  "license": "MIT",
+  "publishConfig": {
+    "access": "public"
+  }
 }

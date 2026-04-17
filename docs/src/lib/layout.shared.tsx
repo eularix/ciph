@@ -14,7 +14,11 @@ export function baseOptions(): BaseLayoutProps {
       },
       {
         text: 'Generate Key',
-        url: '/#generate-key',
+        url: '/generate-key',
+      },
+      {
+        text: 'Search',
+        url: '/docs?search=true',
       },
     ],
     githubUrl: `https://github.com/${gitConfig.user}/${gitConfig.repo}`,

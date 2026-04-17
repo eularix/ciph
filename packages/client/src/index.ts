@@ -157,11 +157,11 @@ function parseCiphHeaders(headers: Record<string, unknown>): CiphResponse<unknow
       : undefined
   const modelUsed = typeof modelUsedRaw === "string" ? modelUsedRaw : undefined
 
-  return {
-    coinsUsed: Number.isFinite(coinsUsed) ? coinsUsed : undefined,
-    coinsRemaining: Number.isFinite(coinsRemaining) ? coinsRemaining : undefined,
-    modelUsed
-  }
+  const result: CiphResponse<unknown>["ciph"] = {}
+  if (Number.isFinite(coinsUsed)) result.coinsUsed = coinsUsed as number
+  if (Number.isFinite(coinsRemaining)) result.coinsRemaining = coinsRemaining as number
+  if (typeof modelUsed === "string") result.modelUsed = modelUsed
+  return result
 }
 
 function toRecordHeaders(headers: AxiosResponse["headers"]): Record<string, string> {
@@ -202,7 +202,7 @@ export function createClient(config: CiphClientConfig): {
 
   const instance: AxiosInstance = axios.create({
     baseURL: config.baseURL,
-    headers: config.headers
+    ...(config.headers !== undefined && { headers: config.headers })
   })
 
   instance.interceptors.request.use(

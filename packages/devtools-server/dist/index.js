@@ -3649,7 +3649,8 @@ var require_websocket_server = __commonJS({
 // src/index.ts
 var index_exports = {};
 __export(index_exports, {
-  CiphDevtoolsServer: () => CiphDevtoolsServer
+  CiphDevtoolsServer: () => CiphDevtoolsServer,
+  ciphDevServer: () => ciphDevServer
 });
 module.exports = __toCommonJS(index_exports);
 var import_node_http = __toESM(require("http"));
@@ -3664,6 +3665,74 @@ var import_subprotocol = __toESM(require_subprotocol(), 1);
 var import_websocket = __toESM(require_websocket(), 1);
 var import_websocket_server = __toESM(require_websocket_server(), 1);
 var wrapper_default = import_websocket.default;
+
+// src/hono/ciphDevServer.ts
+var import_hono = require("hono");
+var import_streaming = require("hono/streaming");
+var import_basic_auth = require("hono/basic-auth");
+function ciphDevServer(config) {
+  const app = new import_hono.Hono();
+  if (config.disabled || process.env.NODE_ENV === "production") {
+    app.all("/*", (c) => c.json({ message: "Not Found" }, 404));
+    return app;
+  }
+  if (config.password) {
+    app.use("/*", (0, import_basic_auth.basicAuth)({ username: "admin", password: config.password }));
+  }
+  const maxLogs = config.maxLogs ?? 500;
+  let logs = [];
+  const listeners = /* @__PURE__ */ new Set();
+  const emitter = globalThis.ciphServerEmitter;
+  if (emitter?.on) {
+    emitter.on("log", (log) => {
+      logs.unshift(log);
+      if (logs.length > maxLogs) {
+        logs.pop();
+      }
+      for (const listener of listeners) {
+        listener(log);
+      }
+    });
+  }
+  app.get("/", (c) => {
+    return c.html(`<!DOCTYPE html><html><body><h1>Ciph Devtools Server</h1><p>Listening for Ciph logs...</p></body></html>`);
+  });
+  app.get("/health", (c) => c.json({ status: "ok" }));
+  app.get("/logs", (c) => {
+    return c.json({
+      logs,
+      total: logs.length,
+      maxLogs
+    });
+  });
+  app.delete("/logs", (c) => {
+    logs = [];
+    return c.json({ ok: true });
+  });
+  app.get("/stream", (c) => {
+    return (0, import_streaming.streamSSE)(c, async (stream) => {
+      const listener = (log) => {
+        stream.writeSSE({
+          event: "ciph-log",
+          data: JSON.stringify(log)
+        });
+      };
+      listeners.add(listener);
+      stream.onAbort(() => {
+        listeners.delete(listener);
+      });
+      while (true) {
+        await stream.sleep(3e4);
+        try {
+          await stream.writeSSE({ data: "", event: "keepalive" });
+        } catch {
+          break;
+        }
+      }
+    });
+  });
+  return app;
+}
 
 // src/index.ts
 var DEFAULT_PORT = 4321;
@@ -3852,6 +3921,7 @@ var CiphDevtoolsServer = class {
 };
 // Annotate the CommonJS export names for ESM import in node:
 0 && (module.exports = {
-  CiphDevtoolsServer
+  CiphDevtoolsServer,
+  ciphDevServer
 });
 //# sourceMappingURL=index.js.map

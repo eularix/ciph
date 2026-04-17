@@ -21,6 +21,7 @@ var __toCommonJS = (mod) => __copyProps(__defProp({}, "__esModule", { value: tru
 // src/index.ts
 var index_exports = {};
 __export(index_exports, {
+  CiphDevtools: () => CiphDevtools,
   CiphDevtoolsClient: () => CiphDevtoolsClient
 });
 module.exports = __toCommonJS(index_exports);
@@ -151,4 +152,61 @@ var CiphDevtoolsClient = class {
     return this.connected;
   }
 };
+
+// src/react/CiphDevtools.tsx
+var import_react = require("react");
+var import_jsx_runtime = require("react/jsx-runtime");
+function DevtoolsComponent(props) {
+  const {
+    defaultOpen = false,
+    maxLogs,
+    filter,
+    disabled = false
+  } = props;
+  const [isOpen, setIsOpen] = (0, import_react.useState)(defaultOpen);
+  const [logs, setLogs] = (0, import_react.useState)([]);
+  const client = (0, import_react.useMemo)(() => new CiphDevtoolsClient({
+    ...maxLogs !== void 0 && { maxLogs },
+    ...filter !== void 0 && { filter }
+  }), [maxLogs, filter]);
+  (0, import_react.useEffect)(() => {
+    if (disabled) return;
+    client.connect();
+    setLogs(client.getLogs());
+    const unsubscribe = client.onLog(() => {
+      setLogs(client.getLogs());
+    });
+    return () => {
+      unsubscribe();
+      client.disconnect();
+    };
+  }, [client, disabled]);
+  if (disabled || false) {
+    return null;
+  }
+  return /* @__PURE__ */ (0, import_jsx_runtime.jsxs)("div", { style: { position: "fixed", bottom: 20, right: 20, zIndex: 9999, fontFamily: "system-ui" }, children: [
+    isOpen && /* @__PURE__ */ (0, import_jsx_runtime.jsxs)("div", { style: { position: "absolute", bottom: 50, right: 0, width: 450, height: 600, background: "#f9fafb", border: "1px solid #e5e7eb", borderRadius: 8, boxShadow: "0 4px 6px -1px rgb(0 0 0 / 0.1)", overflow: "auto", display: "flex", flexDirection: "column" }, children: [
+      /* @__PURE__ */ (0, import_jsx_runtime.jsxs)("div", { style: { padding: 12, borderBottom: "1px solid #e5e7eb", background: "#fff", display: "flex", justifyContent: "space-between", alignItems: "center" }, children: [
+        /* @__PURE__ */ (0, import_jsx_runtime.jsx)("h3", { style: { margin: 0, fontSize: 16 }, children: "Ciph Security Inspector" }),
+        /* @__PURE__ */ (0, import_jsx_runtime.jsx)("button", { onClick: () => client.clearLogs(), style: { padding: "4px 8px", fontSize: 12, cursor: "pointer" }, children: "Clear" })
+      ] }),
+      /* @__PURE__ */ (0, import_jsx_runtime.jsxs)("div", { style: { padding: 12, flex: 1, overflow: "auto" }, children: [
+        logs.length === 0 && /* @__PURE__ */ (0, import_jsx_runtime.jsx)("p", { style: { color: "#6b7280", fontSize: 14 }, children: "No requests captured yet." }),
+        logs.map((log) => /* @__PURE__ */ (0, import_jsx_runtime.jsxs)("div", { style: { marginBottom: 12, padding: 12, background: "#fff", border: "1px solid #e5e7eb", borderRadius: 6 }, children: [
+          /* @__PURE__ */ (0, import_jsx_runtime.jsxs)("div", { style: { display: "flex", justifyContent: "space-between", marginBottom: 8 }, children: [
+            /* @__PURE__ */ (0, import_jsx_runtime.jsxs)("strong", { style: { color: log.log.status >= 400 ? "#ef4444" : "#10b981", fontSize: 14 }, children: [
+              log.log.method,
+              " ",
+              log.log.route
+            ] }),
+            /* @__PURE__ */ (0, import_jsx_runtime.jsx)("span", { style: { fontSize: 12, color: "#6b7280" }, children: log.source })
+          ] }),
+          /* @__PURE__ */ (0, import_jsx_runtime.jsx)("div", { style: { fontSize: 13, background: "#f3f4f6", padding: 8, borderRadius: 4, overflowX: "auto" }, children: /* @__PURE__ */ (0, import_jsx_runtime.jsx)("pre", { style: { margin: 0 }, children: JSON.stringify(log.log.request.plainBody, null, 2) || "No body" }) })
+        ] }, log.id))
+      ] })
+    ] }),
+    /* @__PURE__ */ (0, import_jsx_runtime.jsx)("button", { onClick: () => setIsOpen(!isOpen), style: { padding: "10px 16px", background: "#111827", color: "white", borderRadius: 24, border: "none", cursor: "pointer", boxShadow: "0 4px 6px -1px rgb(0 0 0 / 0.1)", fontWeight: 600 }, children: "\u{1F6E1}\uFE0F Ciph Inspector" })
+  ] });
+}
+var CiphDevtools = false ? () => null : DevtoolsComponent;
 //# sourceMappingURL=index.cjs.map

@@ -1,4 +1,4 @@
-import { webcrypto as nodeWebCrypto } from "node:crypto"
+// import { webcrypto as nodeWebCrypto } from "node:crypto"
 import type {
   FingerprintOptions,
   FingerprintComponents,
@@ -19,7 +19,21 @@ export type {
   CiphClientLog,   
 } from "./types"
 
-const cryptoApi: Crypto = globalThis.crypto ?? nodeWebCrypto
+// const cryptoApi: Crypto = (globalThis.crypto as Crypto | undefined) 
+//   ?? (nodeWebCrypto as unknown as Crypto)
+// ✅ Ganti jadi ini — tidak ada top-level node:crypto import
+function getCryptoApi(): Crypto {
+  if (typeof globalThis.crypto !== 'undefined') {
+    return globalThis.crypto
+  }
+  // Node.js fallback — require() tidak di-detect Vite sebagai static import
+  // eslint-disable-next-line @typescript-eslint/no-require-imports
+  const { webcrypto } = require('crypto') as { webcrypto: Crypto }
+  return webcrypto
+}
+
+const cryptoApi: Crypto = getCryptoApi()
+
 const encoder = new TextEncoder()
 
 function asBufferSource(bytes: Uint8Array): ArrayBuffer {

@@ -1,4 +1,6 @@
 export { CiphDevtoolsClient } from "./client.js"
+export { CiphDevtools } from "./react/CiphDevtools.js"
+export type { CiphDevtoolsProps } from "./react/CiphDevtools.js"
 export type {
   CiphDevtoolsOptions,
   CiphLogEntry,

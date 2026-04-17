@@ -1,5 +1,9 @@
-// src/index.ts
-import { webcrypto as nodeWebCrypto } from "crypto";
+var __require = /* @__PURE__ */ ((x) => typeof require !== "undefined" ? require : typeof Proxy !== "undefined" ? new Proxy(x, {
+  get: (a, b) => (typeof require !== "undefined" ? require : a)[b]
+}) : x)(function(x) {
+  if (typeof require !== "undefined") return require.apply(this, arguments);
+  throw Error('Dynamic require of "' + x + '" is not supported');
+});
 
 // src/types.ts
 var CiphError = class extends Error {
@@ -14,7 +18,14 @@ var CiphError = class extends Error {
 };
 
 // src/index.ts
-var cryptoApi = globalThis.crypto ?? nodeWebCrypto;
+function getCryptoApi() {
+  if (typeof globalThis.crypto !== "undefined") {
+    return globalThis.crypto;
+  }
+  const { webcrypto } = __require("crypto");
+  return webcrypto;
+}
+var cryptoApi = getCryptoApi();
 var encoder = new TextEncoder();
 function asBufferSource(bytes) {
   const out = new Uint8Array(bytes.byteLength);
