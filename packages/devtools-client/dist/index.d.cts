@@ -31,6 +31,7 @@ declare class CiphDevtoolsClient {
     private serverUnsubscribe;
     private connected;
     private autoConnect;
+    private channel;
     constructor(options?: CiphDevtoolsOptions);
     connect(): void;
     disconnect(): void;
@@ -47,8 +48,11 @@ interface CiphDevtoolsProps extends CiphDevtoolsOptions {
     defaultOpen?: boolean;
     shortcut?: string | null;
     disabled?: boolean;
+    inspectorUrl?: string;
 }
 declare function DevtoolsComponent(props: CiphDevtoolsProps): react_jsx_runtime.JSX.Element | null;
 declare const CiphDevtools: typeof DevtoolsComponent;
 
-export { CiphDevtools, CiphDevtoolsClient, type CiphDevtoolsOptions, type CiphDevtoolsProps, type CiphDevtoolsStats, type CiphLogEntry, type CiphLogSource };
+declare function CiphInspectorPage(): react_jsx_runtime.JSX.Element;
+
+export { CiphDevtools, CiphDevtoolsClient, type CiphDevtoolsOptions, type CiphDevtoolsProps, type CiphDevtoolsStats, CiphInspectorPage, type CiphLogEntry, type CiphLogSource };

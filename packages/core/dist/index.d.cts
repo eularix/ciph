@@ -61,9 +61,18 @@ interface DecryptResult {
     plaintext: string;
 }
 /**
+ * ECDH P-256 key pair. Used for asymmetric key exchange (v2).
+ * - privateKey: base64url-encoded pkcs8 (server only, never exposed)
+ * - publicKey:  base64url-encoded raw uncompressed P-256 point (65 bytes)
+ */
+interface CiphKeyPair {
+    privateKey: string;
+    publicKey: string;
+}
+/**
  * All Ciph error codes.
  */
-type CiphErrorCode = "CIPH001" | "CIPH002" | "CIPH003" | "CIPH004" | "CIPH005" | "CIPH006";
+type CiphErrorCode = "CIPH001" | "CIPH002" | "CIPH003" | "CIPH004" | "CIPH005" | "CIPH006" | "CIPH007";
 /**
  * Structured error thrown by all @ciph/* packages.
  */
@@ -78,6 +87,10 @@ declare class CiphError extends Error {
 interface CiphErrorResponse {
     code: CiphErrorCode;
     message: string;
+}
+interface CiphServerLogEcdh {
+    clientPublicKey: string;
+    sessionKeyDerived: boolean;
 }
 interface CiphServerLog {
     id: string;
@@ -141,4 +154,30 @@ declare function validateFingerprint(stored: FingerprintComponents, incoming: Fi
 declare function encrypt(plaintext: string, key: string): Promise<EncryptResult>;
 declare function decrypt(ciphertext: string, key: string): Promise<DecryptResult>;
 
-export { type CiphClientLog, type CiphCoreConfig, CiphError, type CiphErrorCode, type CiphErrorResponse, type CiphServerLog, type DecryptResult, type EncryptResult, type FingerprintComponents, type FingerprintOptions, type FingerprintResult, decrypt, decryptFingerprint, deriveKey, encrypt, encryptFingerprint, fromBase64url, generateFingerprint, randomBytes, toBase64url, validateFingerprint };
+/**
+ * Generate a new ECDH P-256 key pair.
+ * Server: call once, store privateKey in CIPH_PRIVATE_KEY env var.
+ * Client: call per-session to get an ephemeral key pair.
+ */
+declare function generateKeyPair(): Promise<CiphKeyPair>;
+/**
+ * Perform ECDH key exchange.
+ * - privateKey: base64url pkcs8 (your private key)
+ * - peerPublicKey: base64url raw uncompressed point (peer's public key)
+ * Returns 32 raw shared bytes (x-coordinate of ECDH shared point).
+ */
+declare function deriveECDHBits(privateKey: string, peerPublicKey: string): Promise<Uint8Array>;
+/**
+ * Derive a session AES-256 key from raw ECDH shared bytes.
+ * Uses HKDF-SHA256 with info = "ciph-v2-session".
+ * Returns base64url AES key.
+ */
+declare function deriveSessionKey(rawSharedBytes: Uint8Array): Promise<string>;
+/**
+ * Derive a per-request AES-256 key from session key + device fingerprint hash.
+ * Uses HKDF-SHA256 with salt = fingerprintHash (hex), info = "ciph-v2-request".
+ * Returns base64url AES key.
+ */
+declare function deriveRequestKey(sessionKey: string, fingerprintHash: string): Promise<string>;
+
+export { type CiphClientLog, type CiphCoreConfig, CiphError, type CiphErrorCode, type CiphErrorResponse, type CiphKeyPair, type CiphServerLog, type CiphServerLogEcdh, type DecryptResult, type EncryptResult, type FingerprintComponents, type FingerprintOptions, type FingerprintResult, decrypt, decryptFingerprint, deriveECDHBits, deriveKey, deriveRequestKey, deriveSessionKey, encrypt, encryptFingerprint, fromBase64url, generateFingerprint, generateKeyPair, randomBytes, toBase64url, validateFingerprint };

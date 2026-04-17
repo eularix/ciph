@@ -26,6 +26,9 @@
   "publishConfig": {
     "access": "public"
   },
+  "optionalDependencies": {
+    "ws": "^8.0.0"
+  },
   "devDependencies": {
     "@hono/node-server": "^1.13.0",
     "@types/node": "^22.0.0",

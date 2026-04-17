@@ -7,6 +7,7 @@ export interface CiphDevtoolsProps extends CiphDevtoolsOptions {
   defaultOpen?: boolean
   shortcut?: string | null
   disabled?: boolean
+  inspectorUrl?: string
 }
 
 function DevtoolsComponent(props: CiphDevtoolsProps) {
@@ -15,6 +16,7 @@ function DevtoolsComponent(props: CiphDevtoolsProps) {
     maxLogs,
     filter,
     disabled = false,
+    inspectorUrl = '/ciph-inspector',
   } = props
 
   const [isOpen, setIsOpen] = useState(defaultOpen)
@@ -53,7 +55,16 @@ function DevtoolsComponent(props: CiphDevtoolsProps) {
         <div style={{ position: 'absolute', bottom: 50, right: 0, width: 450, height: 600, background: '#f9fafb', border: '1px solid #e5e7eb', borderRadius: 8, boxShadow: '0 4px 6px -1px rgb(0 0 0 / 0.1)', overflow: 'auto', display: 'flex', flexDirection: 'column' }}>
           <div style={{ padding: 12, borderBottom: '1px solid #e5e7eb', background: '#fff', display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
             <h3 style={{ margin: 0, fontSize: 16 }}>Ciph Security Inspector</h3>
-            <button onClick={() => client.clearLogs()} style={{ padding: '4px 8px', fontSize: 12, cursor: 'pointer' }}>Clear</button>
+            <div style={{ display: 'flex', gap: 6 }}>
+              <button
+                onClick={() => window.open(inspectorUrl, '_blank', 'noopener,noreferrer')}
+                style={{ padding: '4px 8px', fontSize: 12, cursor: 'pointer' }}
+                title="Open full inspector in new tab"
+              >
+                ↗ Full Inspector
+              </button>
+              <button onClick={() => client.clearLogs()} style={{ padding: '4px 8px', fontSize: 12, cursor: 'pointer' }}>Clear</button>
+            </div>
           </div>
           <div style={{ padding: 12, flex: 1, overflow: 'auto' }}>
             {logs.length === 0 && <p style={{ color: '#6b7280', fontSize: 14 }}>No requests captured yet.</p>}

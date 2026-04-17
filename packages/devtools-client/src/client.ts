@@ -11,6 +11,8 @@ type GlobalWithEmitters = typeof globalThis & {
   __ciphClientEmitter__?: SimpleEmitter
 }
 
+const BROADCAST_CHANNEL = 'ciph-devtools'
+
 export class CiphDevtoolsClient {
   private maxLogs: number
   private filter: ((entry: CiphLogEntry) => boolean) | undefined
@@ -20,6 +22,7 @@ export class CiphDevtoolsClient {
   private serverUnsubscribe: (() => void) | undefined
   private connected = false
   private autoConnect: boolean
+  private channel: BroadcastChannel | null = null
 
   constructor(options: CiphDevtoolsOptions = {}) {
     this.maxLogs = options.maxLogs ?? 500
@@ -81,6 +84,14 @@ export class CiphDevtoolsClient {
     this.logs.unshift(entry)
     if (this.logs.length > this.maxLogs) {
       this.logs.pop()
+    }
+
+    // Relay to other tabs (e.g. /ciph-inspector open in new tab)
+    if (typeof BroadcastChannel !== 'undefined') {
+      if (!this.channel) {
+        this.channel = new BroadcastChannel(BROADCAST_CHANNEL)
+      }
+      this.channel.postMessage(entry)
     }
 
     for (const cb of this.logCallbacks) {

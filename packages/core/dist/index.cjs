@@ -23,11 +23,15 @@ __export(index_exports, {
   CiphError: () => CiphError,
   decrypt: () => decrypt,
   decryptFingerprint: () => decryptFingerprint,
+  deriveECDHBits: () => deriveECDHBits,
   deriveKey: () => deriveKey,
+  deriveRequestKey: () => deriveRequestKey,
+  deriveSessionKey: () => deriveSessionKey,
   encrypt: () => encrypt,
   encryptFingerprint: () => encryptFingerprint,
   fromBase64url: () => fromBase64url,
   generateFingerprint: () => generateFingerprint,
+  generateKeyPair: () => generateKeyPair,
   randomBytes: () => randomBytes,
   toBase64url: () => toBase64url,
   validateFingerprint: () => validateFingerprint
@@ -73,12 +77,27 @@ function randomBytes(length) {
   return bytes;
 }
 function toBase64url(bytes) {
-  return Buffer.from(bytes).toString("base64").replace(/\+/g, "-").replace(/\//g, "_").replace(/=+$/g, "");
+  if (typeof Buffer !== "undefined") {
+    return Buffer.from(bytes).toString("base64").replace(/\+/g, "-").replace(/\//g, "_").replace(/=+$/g, "");
+  }
+  let binary = "";
+  for (let i = 0; i < bytes.byteLength; i++) {
+    binary += String.fromCharCode(bytes[i]);
+  }
+  return btoa(binary).replace(/\+/g, "-").replace(/\//g, "_").replace(/=+$/g, "");
 }
 function fromBase64url(str) {
   const normalized = str.replace(/-/g, "+").replace(/_/g, "/");
   const padded = normalized + "===".slice((normalized.length + 3) % 4);
-  return new Uint8Array(Buffer.from(padded, "base64"));
+  if (typeof Buffer !== "undefined") {
+    return new Uint8Array(Buffer.from(padded, "base64"));
+  }
+  const binary = atob(padded);
+  const bytes = new Uint8Array(binary.length);
+  for (let i = 0; i < binary.length; i++) {
+    bytes[i] = binary.charCodeAt(i);
+  }
+  return bytes;
 }
 function toHex(bytes) {
   return Array.from(bytes).map((b) => b.toString(16).padStart(2, "0")).join("");
@@ -232,16 +251,102 @@ async function decrypt(ciphertext, key) {
     plaintext: decoder.decode(plain)
   };
 }
+var ECDH_PARAMS = { name: "ECDH", namedCurve: "P-256" };
+async function generateKeyPair() {
+  const kp = await cryptoApi.subtle.generateKey(ECDH_PARAMS, true, ["deriveBits"]);
+  const pubRaw = await cryptoApi.subtle.exportKey("raw", kp.publicKey);
+  const privPkcs8 = await cryptoApi.subtle.exportKey("pkcs8", kp.privateKey);
+  return {
+    publicKey: toBase64url(new Uint8Array(pubRaw)),
+    privateKey: toBase64url(new Uint8Array(privPkcs8))
+  };
+}
+async function deriveECDHBits(privateKey, peerPublicKey) {
+  const privBytes = fromBase64url(privateKey);
+  const pubBytes = fromBase64url(peerPublicKey);
+  const privCryptoKey = await cryptoApi.subtle.importKey(
+    "pkcs8",
+    asBufferSource(privBytes),
+    ECDH_PARAMS,
+    false,
+    ["deriveBits"]
+  );
+  const pubCryptoKey = await cryptoApi.subtle.importKey(
+    "raw",
+    asBufferSource(pubBytes),
+    ECDH_PARAMS,
+    false,
+    []
+  );
+  const sharedBits = await cryptoApi.subtle.deriveBits(
+    { name: "ECDH", public: pubCryptoKey },
+    privCryptoKey,
+    256
+  );
+  return new Uint8Array(sharedBits);
+}
+async function deriveSessionKey(rawSharedBytes) {
+  const keyMaterial = await cryptoApi.subtle.importKey(
+    "raw",
+    asBufferSource(rawSharedBytes),
+    "HKDF",
+    false,
+    ["deriveKey"]
+  );
+  const salt = new Uint8Array(32);
+  const sessionCryptoKey = await cryptoApi.subtle.deriveKey(
+    {
+      name: "HKDF",
+      hash: "SHA-256",
+      salt: asBufferSource(salt),
+      info: asBufferSource(encoder.encode("ciph-v2-session"))
+    },
+    keyMaterial,
+    { name: "AES-GCM", length: 256 },
+    true,
+    ["encrypt", "decrypt"]
+  );
+  const raw = await cryptoApi.subtle.exportKey("raw", sessionCryptoKey);
+  return toBase64url(new Uint8Array(raw));
+}
+async function deriveRequestKey(sessionKey, fingerprintHash) {
+  const sessionKeyBytes = fromBase64url(sessionKey);
+  const keyMaterial = await cryptoApi.subtle.importKey(
+    "raw",
+    asBufferSource(sessionKeyBytes),
+    "HKDF",
+    false,
+    ["deriveKey"]
+  );
+  const requestCryptoKey = await cryptoApi.subtle.deriveKey(
+    {
+      name: "HKDF",
+      hash: "SHA-256",
+      salt: asBufferSource(encoder.encode(fingerprintHash)),
+      info: asBufferSource(encoder.encode("ciph-v2-request"))
+    },
+    keyMaterial,
+    { name: "AES-GCM", length: 256 },
+    true,
+    ["encrypt", "decrypt"]
+  );
+  const raw = await cryptoApi.subtle.exportKey("raw", requestCryptoKey);
+  return toBase64url(new Uint8Array(raw));
+}
 // Annotate the CommonJS export names for ESM import in node:
 0 && (module.exports = {
   CiphError,
   decrypt,
   decryptFingerprint,
+  deriveECDHBits,
   deriveKey,
+  deriveRequestKey,
+  deriveSessionKey,
   encrypt,
   encryptFingerprint,
   fromBase64url,
   generateFingerprint,
+  generateKeyPair,
   randomBytes,
   toBase64url,
   validateFingerprint

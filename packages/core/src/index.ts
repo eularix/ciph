@@ -8,15 +8,18 @@ import type {
 export { CiphError } from "./types"
 export type {
   CiphCoreConfig,
+  CiphKeyPair,
   FingerprintOptions,
   FingerprintComponents,
   FingerprintResult,
   EncryptResult,
   DecryptResult,
+  CiphWirePayload,
   CiphErrorCode,
   CiphErrorResponse,
-  CiphServerLog, 
-  CiphClientLog,   
+  CiphServerLog,
+  CiphServerLogEcdh,
+  CiphClientLog,
 } from "./types"
 
 // const cryptoApi: Crypto = (globalThis.crypto as Crypto | undefined) 
@@ -56,17 +59,34 @@ export function randomBytes(length: number): Uint8Array {
 }
 
 export function toBase64url(bytes: Uint8Array): string {
-  return Buffer.from(bytes)
-    .toString("base64")
-    .replace(/\+/g, "-")
-    .replace(/\//g, "_")
-    .replace(/=+$/g, "")
+  // Buffer (Node.js / Bun) — fastest path
+  if (typeof Buffer !== "undefined") {
+    return Buffer.from(bytes)
+      .toString("base64")
+      .replace(/\+/g, "-")
+      .replace(/\//g, "_")
+      .replace(/=+$/g, "")
+  }
+  // btoa — browser / Deno / any Web-standard runtime
+  let binary = ""
+  for (let i = 0; i < bytes.byteLength; i++) {
+    binary += String.fromCharCode(bytes[i]!)
+  }
+  return btoa(binary).replace(/\+/g, "-").replace(/\//g, "_").replace(/=+$/g, "")
 }
 
 export function fromBase64url(str: string): Uint8Array {
   const normalized = str.replace(/-/g, "+").replace(/_/g, "/")
   const padded = normalized + "===".slice((normalized.length + 3) % 4)
-  return new Uint8Array(Buffer.from(padded, "base64"))
+  if (typeof Buffer !== "undefined") {
+    return new Uint8Array(Buffer.from(padded, "base64"))
+  }
+  const binary = atob(padded)
+  const bytes = new Uint8Array(binary.length)
+  for (let i = 0; i < binary.length; i++) {
+    bytes[i] = binary.charCodeAt(i)
+  }
+  return bytes
 }
 
 function toHex(bytes: Uint8Array): string {
@@ -260,4 +280,135 @@ export async function decrypt(ciphertext: string, key: string): Promise<DecryptR
   return {
     plaintext: decoder.decode(plain)
   }
+}
+
+// ─────────────────────────────────────────────
+// ECDH v2 — Asymmetric key exchange primitives
+// ─────────────────────────────────────────────
+
+import type { CiphKeyPair } from "./types"
+
+const ECDH_PARAMS: EcKeyGenParams = { name: "ECDH", namedCurve: "P-256" }
+
+/**
+ * Generate a new ECDH P-256 key pair.
+ * Server: call once, store privateKey in CIPH_PRIVATE_KEY env var.
+ * Client: call per-session to get an ephemeral key pair.
+ */
+export async function generateKeyPair(): Promise<CiphKeyPair> {
+  const kp = await cryptoApi.subtle.generateKey(ECDH_PARAMS, true, ["deriveBits"])
+  const pubRaw = await cryptoApi.subtle.exportKey("raw", kp.publicKey)
+  const privPkcs8 = await cryptoApi.subtle.exportKey("pkcs8", kp.privateKey)
+  return {
+    publicKey: toBase64url(new Uint8Array(pubRaw)),
+    privateKey: toBase64url(new Uint8Array(privPkcs8)),
+  }
+}
+
+/**
+ * Perform ECDH key exchange.
+ * - privateKey: base64url pkcs8 (your private key)
+ * - peerPublicKey: base64url raw uncompressed point (peer's public key)
+ * Returns 32 raw shared bytes (x-coordinate of ECDH shared point).
+ */
+export async function deriveECDHBits(
+  privateKey: string,
+  peerPublicKey: string
+): Promise<Uint8Array> {
+  const privBytes = fromBase64url(privateKey)
+  const pubBytes = fromBase64url(peerPublicKey)
+
+  const privCryptoKey = await cryptoApi.subtle.importKey(
+    "pkcs8",
+    asBufferSource(privBytes),
+    ECDH_PARAMS,
+    false,
+    ["deriveBits"]
+  )
+
+  const pubCryptoKey = await cryptoApi.subtle.importKey(
+    "raw",
+    asBufferSource(pubBytes),
+    ECDH_PARAMS,
+    false,
+    []
+  )
+
+  const sharedBits = await cryptoApi.subtle.deriveBits(
+    { name: "ECDH", public: pubCryptoKey },
+    privCryptoKey,
+    256
+  )
+
+  return new Uint8Array(sharedBits)
+}
+
+/**
+ * Derive a session AES-256 key from raw ECDH shared bytes.
+ * Uses HKDF-SHA256 with info = "ciph-v2-session".
+ * Returns base64url AES key.
+ */
+export async function deriveSessionKey(rawSharedBytes: Uint8Array): Promise<string> {
+  const keyMaterial = await cryptoApi.subtle.importKey(
+    "raw",
+    asBufferSource(rawSharedBytes),
+    "HKDF",
+    false,
+    ["deriveKey"]
+  )
+
+  // 32 zero bytes as default salt (RFC 5869: when no salt, use HashLen zeros)
+  const salt = new Uint8Array(32)
+
+  const sessionCryptoKey = await cryptoApi.subtle.deriveKey(
+    {
+      name: "HKDF",
+      hash: "SHA-256",
+      salt: asBufferSource(salt),
+      info: asBufferSource(encoder.encode("ciph-v2-session")),
+    },
+    keyMaterial,
+    { name: "AES-GCM", length: 256 },
+    true,
+    ["encrypt", "decrypt"]
+  )
+
+  const raw = await cryptoApi.subtle.exportKey("raw", sessionCryptoKey)
+  return toBase64url(new Uint8Array(raw))
+}
+
+/**
+ * Derive a per-request AES-256 key from session key + device fingerprint hash.
+ * Uses HKDF-SHA256 with salt = fingerprintHash (hex), info = "ciph-v2-request".
+ * Returns base64url AES key.
+ */
+export async function deriveRequestKey(
+  sessionKey: string,
+  fingerprintHash: string
+): Promise<string> {
+  const sessionKeyBytes = fromBase64url(sessionKey)
+
+  const keyMaterial = await cryptoApi.subtle.importKey(
+    "raw",
+    asBufferSource(sessionKeyBytes),
+    "HKDF",
+    false,
+    ["deriveKey"]
+  )
+
+  const requestCryptoKey = await cryptoApi.subtle.deriveKey(
+    {
+      name: "HKDF",
+      hash: "SHA-256",
+      salt: asBufferSource(encoder.encode(fingerprintHash)),
+      info: asBufferSource(encoder.encode("ciph-v2-request")),
+    },
+    keyMaterial,
+    { name: "AES-GCM", length: 256 },
+    true,
+    ["encrypt", "decrypt"]
+  )
+
+  const raw = await cryptoApi.subtle.exportKey("raw", requestCryptoKey)
+  return toBase64url(new Uint8Array(raw))
 }

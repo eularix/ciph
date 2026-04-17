@@ -76,15 +76,37 @@ export interface DecryptResult {
 }
 
 /**
+ * Wire format for encrypted HTTP responses (and future encrypted request bodies).
+ * Content-Type: application/json
+ */
+export interface CiphWirePayload {
+  /** Always "encrypted" — machine-readable signal for the client to decrypt */
+  status: "encrypted"
+  /** Base64url ciphertext: IV[12] + AuthTag[16] + EncryptedData[n] */
+  data: string
+}
+
+/**
+ * ECDH P-256 key pair. Used for asymmetric key exchange (v2).
+ * - privateKey: base64url-encoded pkcs8 (server only, never exposed)
+ * - publicKey:  base64url-encoded raw uncompressed P-256 point (65 bytes)
+ */
+export interface CiphKeyPair {
+  privateKey: string
+  publicKey: string
+}
+
+/**
  * All Ciph error codes.
  */
 export type CiphErrorCode =
-  | "CIPH001" // X-Fingerprint header missing
-  | "CIPH002" // Fingerprint decryption failed (wrong secret)
-  | "CIPH003" // Fingerprint mismatch (IP or UA changed)
+  | "CIPH001" // X-Client-PublicKey / X-Fingerprint header missing
+  | "CIPH002" // Fingerprint decryption failed (wrong key)
+  | "CIPH003" // Fingerprint mismatch (UA changed)
   | "CIPH004" // Request body decryption failed
   | "CIPH005" // Payload too large
   | "CIPH006" // Response encryption failed
+  | "CIPH007" // ECDH key derivation failed (malformed client public key)
 
 /**
  * Structured error thrown by all @ciph/* packages.
@@ -106,6 +128,11 @@ export class CiphError extends Error {
 export interface CiphErrorResponse {
   code: CiphErrorCode
   message: string
+}
+
+export interface CiphServerLogEcdh {
+  clientPublicKey: string
+  sessionKeyDerived: boolean
 }
 
 export interface CiphServerLog {

@@ -24,7 +24,7 @@ importers:
         specifier: ^2.1.3
         version: 2.1.9(@types/node@25.6.0)(@vitest/ui@2.1.9)(jsdom@24.1.3)(lightningcss@1.32.0)
 
-  example/backend:
+  example/hono:
     dependencies:
       '@ciph/core':
         specifier: workspace:*
@@ -46,14 +46,14 @@ importers:
         specifier: ^25.6.0
         version: 25.6.0
 
-  example/frontend:
+  example/react:
     dependencies:
-      '@ciph/client':
-        specifier: workspace:*
-        version: link:../../packages/client
       '@ciph/devtools-client':
         specifier: workspace:*
         version: link:../../packages/devtools-client
+      '@ciph/react':
+        specifier: workspace:*
+        version: link:../../packages/react
       axios:
         specifier: ^1.7.0
         version: 1.15.0
@@ -245,6 +245,36 @@ importers:
       vitest:
         specifier: ^2.0.0
         version: 2.1.9(@types/node@22.19.17)(@vitest/ui@2.1.9)(jsdom@24.1.3)(lightningcss@1.32.0)
+
+  packages/react:
+    devDependencies:
+      '@ciph/core':
+        specifier: workspace:*
+        version: link:../core
+      '@types/node':
+        specifier: ^22.0.0
+        version: 22.19.17
+      '@types/react':
+        specifier: ^19.0.0
+        version: 19.2.14
+      '@types/react-dom':
+        specifier: ^19.0.0
+        version: 19.2.3(@types/react@19.2.14)
+      axios:
+        specifier: ^1.7.0
+        version: 1.15.0
+      react:
+        specifier: ^19.0.0
+        version: 19.2.5
+      react-dom:
+        specifier: ^19.0.0
+        version: 19.2.5(react@19.2.5)
+      tsup:
+        specifier: ^8.0.0
+        version: 8.5.1(postcss@8.5.10)(typescript@5.9.3)
+      typescript:
+        specifier: ^5.0.0
+        version: 5.9.3
 
 packages:
 
