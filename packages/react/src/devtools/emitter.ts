@@ -5,7 +5,7 @@ import type { CiphClientLog } from "@ciph/core"
 // instance, emits logs here, and the panel subscribes. No WebSocket needed.
 
 export interface CiphClientEmitter {
-  emit(event: "log", log: CiphClientLog): void
+  emit(event: "log", log: CiphClientLog, isBroadcast?: boolean): void
   on(event: "log", listener: (log: CiphClientLog) => void): () => void
 }
 
@@ -13,6 +13,9 @@ declare global {
   // eslint-disable-next-line no-var
   var __ciphClientEmitter__: CiphClientEmitter | undefined
 }
+
+// ─── Broadcast Channel for Multi-tab Sync ─────────────────────────────────────
+let _channel: BroadcastChannel | undefined
 
 /**
  * Creates `globalThis.__ciphClientEmitter__` if not already set.
@@ -24,10 +27,24 @@ export function autoInitClientEmitter(): void {
 
   const listeners: Array<(log: CiphClientLog) => void> = []
 
+  if (typeof BroadcastChannel !== "undefined" && !_channel) {
+    _channel = new BroadcastChannel("ciph-devtools-logs")
+    _channel.onmessage = (event) => {
+      if (event.data?.type === "ciph-log" && event.data.log) {
+        // Emit locally without re-broadcasting
+        globalThis.__ciphClientEmitter__?.emit("log", event.data.log as CiphClientLog, true)
+      }
+    }
+  }
+
   globalThis.__ciphClientEmitter__ = {
-    emit(event, log) {
+    emit(event, log, isBroadcast = false) {
       if (event === "log") {
         for (const l of listeners) l(log)
+        // Broadcast to other tabs if this log originated locally
+        if (!isBroadcast && _channel) {
+          _channel.postMessage({ type: "ciph-log", log })
+        }
       }
     },
     on(event, listener) {

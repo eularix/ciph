@@ -9,6 +9,10 @@ createRoot(document.getElementById('root')!).render(
     <CiphProvider
       baseURL={import.meta.env.VITE_API_URL as string}
       serverPublicKey={import.meta.env.VITE_CIPH_SERVER_PUBLIC_KEY as string}
+      devtools={{
+        position: 'bottom',
+        inspectorPath: '/ciph-inspector',
+      }}
     >
       <App />
       {/* 🛡️ Ciph Inspector panel auto-renders in development — no extra imports needed */}

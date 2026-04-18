@@ -1,5 +1,17 @@
 import * as core from '@ciph/core';
-import { MiddlewareHandler } from 'hono';
+import { CiphServerLog } from '@ciph/core';
+import { Hono, MiddlewareHandler } from 'hono';
+import * as hono_types from 'hono/types';
+
+interface CiphHonoEmitter {
+    emit(event: "log", log: CiphServerLog): void;
+    on(event: "log", listener: (log: CiphServerLog) => void): void;
+    off(event: "log", listener: (log: CiphServerLog) => void): void;
+}
+declare global {
+    var ciphServerEmitter: CiphHonoEmitter | undefined;
+}
+declare function getCiphInspectorApp(): Hono<hono_types.BlankEnv, hono_types.BlankSchema, "/">;
 
 interface CiphHonoConfig {
     /**
@@ -57,4 +69,4 @@ interface CiphHonoConfig {
 declare function ciphExclude(): MiddlewareHandler;
 declare function ciph(config: CiphHonoConfig): MiddlewareHandler;
 
-export { type CiphHonoConfig, ciph, ciphExclude };
+export { type CiphHonoConfig, ciph, ciphExclude, getCiphInspectorApp };

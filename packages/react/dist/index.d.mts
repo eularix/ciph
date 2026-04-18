@@ -64,7 +64,7 @@ interface CiphDevtoolsConfig {
     /** Panel open by default. Default: false */
     defaultOpen?: boolean;
     /** Panel position. Default: "bottom-right" */
-    position?: "bottom-right" | "bottom-left" | "top-right" | "top-left";
+    position?: "bottom-right" | "bottom-left" | "top-right" | "top-left" | "bottom" | "top" | "left" | "right";
 }
 interface CiphProviderProps extends Omit<CiphClientConfig, "baseURL" | "serverPublicKey"> {
     baseURL: string;
@@ -123,7 +123,7 @@ declare function CiphProvider({ children, devtools: devtoolsConfig, ...config }:
 declare function useCiph(): CiphClient;
 
 interface CiphClientEmitter {
-    emit(event: "log", log: CiphClientLog): void;
+    emit(event: "log", log: CiphClientLog, isBroadcast?: boolean): void;
     on(event: "log", listener: (log: CiphClientLog) => void): () => void;
 }
 declare global {
@@ -142,4 +142,10 @@ declare function autoInitClientEmitter(): void;
  */
 declare function emitClientLog(log: CiphClientLog): void;
 
-export { type CiphClient, type CiphClientConfig, type CiphClientEmitter, type CiphDevtoolsConfig, CiphProvider, type CiphProviderProps, type CiphResponse, type RequestConfig, autoInitClientEmitter, createClient, emitClientLog, useCiph };
+interface CiphInspectorProps {
+    maxLogs?: number;
+}
+declare function Inspector({ maxLogs }: CiphInspectorProps): react_jsx_runtime.JSX.Element;
+declare const CiphInspector: (() => null) | typeof Inspector;
+
+export { type CiphClient, type CiphClientConfig, type CiphClientEmitter, type CiphDevtoolsConfig, CiphInspector, type CiphInspectorProps, CiphProvider, type CiphProviderProps, type CiphResponse, type RequestConfig, autoInitClientEmitter, createClient, emitClientLog, useCiph };

@@ -31,12 +31,14 @@ var __toCommonJS = (mod) => __copyProps(__defProp({}, "__esModule", { value: tru
 var index_exports = {};
 __export(index_exports, {
   ciph: () => ciph,
-  ciphExclude: () => ciphExclude
+  ciphExclude: () => ciphExclude,
+  getCiphInspectorApp: () => getCiphInspectorApp
 });
 module.exports = __toCommonJS(index_exports);
 var core = __toESM(require("@ciph/core"));
 
 // src/devtools.ts
+var import_hono = require("hono");
 function autoInitEmitter() {
   if (globalThis.ciphServerEmitter) return;
   const listeners = [];
@@ -56,7 +58,7 @@ function autoInitEmitter() {
   };
 }
 var BASE_PATH = "/ciph-devtools";
-function buildInspectorHtml(wsUrl) {
+function buildInspectorHtml(streamUrl) {
   return `<!DOCTYPE html>
 <html lang="en">
 <head>
@@ -135,9 +137,9 @@ function buildInspectorHtml(wsUrl) {
 </div>
 <script>
 (function(){
-  var wsUrl='${wsUrl}';
+  var streamUrl='${streamUrl}';
   var logsUrl='${BASE_PATH}/logs';
-  var logs=[],sel=null,ws=null,delay=1000;
+  var logs=[],sel=null;
 
   function mk(tag,cls,txt){
     var e=document.createElement(tag);
@@ -147,17 +149,13 @@ function buildInspectorHtml(wsUrl) {
   }
   function ap(p){for(var i=1;i<arguments.length;i++)p.appendChild(arguments[i]);return p;}
   function sc(s){return s>=500?'fail':s>=400?'warn':'ok';}
-  function fmtObj(v){
-    if(v===null||v===undefined)return'\u2014';
-    try{return JSON.stringify(v,null,2);}catch(e){return String(v);}
-  }
+  function fmtObj(v){if(v===null||v===undefined)return'\u2014';try{return JSON.stringify(v,null,2);}catch(e){return String(v);}}
   function trunc(s){if(!s)return'\u2014';return s.length>120?s.slice(0,120)+'\u2026':s;}
 
   function showEmpty(){
     var d=document.getElementById('detail');
     d.replaceChildren();
     d.appendChild(ap(mk('div','empty'),'\u2190 Select a request to inspect'));
-    // Note: above uses textContent via mk helper \u2014 no dynamic HTML injection
   }
 
   function render(){
@@ -204,7 +202,6 @@ function buildInspectorHtml(wsUrl) {
     var detail=document.getElementById('detail');
     detail.replaceChildren();
     var isEnc=!l.excluded;
-    // Header section
     var dhead=mk('div','dhead');
     var dtitle=mk('div','dtitle');
     ap(dtitle,
@@ -219,24 +216,14 @@ function buildInspectorHtml(wsUrl) {
     if(l.request&&l.request.ip)dmeta.appendChild(mk('span','','IP: '+l.request.ip));
     ap(dhead,dtitle,dmeta);
     detail.appendChild(dhead);
-    // Body columns
-    var req=l.request||{};
-    var res=l.response||{};
-    var rawReqEnc=(req.encryptedBody)||'';
-    var rawResEnc=(res.encryptedBody)||'';
+    var req=l.request||{};var res=l.response||{};
+    var rawReqEnc=(req.encryptedBody)||'';var rawResEnc=(res.encryptedBody)||'';
     var cols1=mk('div','cols');
-    ap(cols1,
-      codeBlock('Request (Plain)',fmtObj(req.plainBody)),
-      codeBlock('Response (Plain)',fmtObj(res.plainBody))
-    );
+    ap(cols1,codeBlock('Request (Plain)',fmtObj(req.plainBody)),codeBlock('Response (Plain)',fmtObj(res.plainBody)));
     detail.appendChild(cols1);
     var cols2=mk('div','cols');
-    ap(cols2,
-      codeBlock('Request Encrypted',trunc(rawReqEnc),rawReqEnc),
-      codeBlock('Response Encrypted',trunc(rawResEnc),rawResEnc)
-    );
+    ap(cols2,codeBlock('Request Encrypted',trunc(rawReqEnc),rawReqEnc),codeBlock('Response Encrypted',trunc(rawResEnc),rawResEnc));
     detail.appendChild(cols2);
-    // Fingerprint section
     var fp=l.fingerprint||{};
     var fpSec=mk('div','sec');
     fpSec.appendChild(mk('div','stitle','Fingerprint'));
@@ -249,16 +236,15 @@ function buildInspectorHtml(wsUrl) {
   }
 
   function connect(){
-    ws=new WebSocket(wsUrl);
-    ws.onopen=function(){
+    var es=new EventSource(streamUrl);
+    es.onopen=function(){
       document.getElementById('dot').className='dot live';
       document.getElementById('lbl').textContent='Live';
-      delay=1000;
       fetch(logsUrl).then(function(r){return r.json();}).then(function(d){
-        if(d.logs){logs=d.logs.reverse();render();}
+        if(d.logs&&logs.length===0){logs=d.logs.reverse();render();}
       }).catch(function(){});
     };
-    ws.onmessage=function(e){
+    es.onmessage=function(e){
       try{
         logs.unshift(JSON.parse(e.data));
         if(logs.length>500)logs.pop();
@@ -266,12 +252,10 @@ function buildInspectorHtml(wsUrl) {
         if(sel===null)pick(0);
       }catch(err){}
     };
-    ws.onclose=function(){
+    es.onerror=function(){
       document.getElementById('dot').className='dot';
       document.getElementById('lbl').textContent='Reconnecting\u2026';
-      setTimeout(function(){delay=Math.min(delay*2,30000);connect();},delay);
     };
-    ws.onerror=function(){ws.close();};
   }
 
   document.getElementById('clrBtn').onclick=function(){
@@ -291,80 +275,181 @@ function buildInspectorHtml(wsUrl) {
 var _started = false;
 var _logs = [];
 var MAX_LOGS = 500;
+function subscribeBuffer() {
+  globalThis.ciphServerEmitter?.on("log", (log) => {
+    _logs.unshift(log);
+    if (_logs.length > MAX_LOGS) _logs.pop();
+  });
+}
+var corsHeaders = {
+  "access-control-allow-origin": "*",
+  "access-control-allow-methods": "GET, DELETE, OPTIONS"
+};
+function makeSSEStream(signal) {
+  const enc = new TextEncoder();
+  const { readable, writable } = new TransformStream();
+  const writer = writable.getWriter();
+  const write = (s) => writer.write(enc.encode(s)).catch(() => {
+  });
+  write(": connected\n\n");
+  const send = (log) => write(`data: ${JSON.stringify(log)}
+
+`);
+  globalThis.ciphServerEmitter?.on("log", send);
+  const keepalive = setInterval(() => write(": ping\n\n"), 25e3);
+  signal.addEventListener("abort", () => {
+    clearInterval(keepalive);
+    globalThis.ciphServerEmitter?.off("log", send);
+    writer.close().catch(() => {
+    });
+  });
+  return readable;
+}
+var sseResponseHeaders = {
+  "content-type": "text/event-stream; charset=utf-8",
+  "cache-control": "no-cache",
+  "connection": "keep-alive",
+  ...corsHeaders
+};
+async function startBunDevtools(port) {
+  const bunGlobal = globalThis;
+  const streamUrl = `http://localhost:${port}${BASE_PATH}/stream`;
+  const html = buildInspectorHtml(streamUrl);
+  bunGlobal.Bun.serve({
+    port,
+    fetch(req) {
+      const url = new URL(req.url);
+      const method = req.method;
+      if (method === "OPTIONS") return new Response(null, { status: 204, headers: corsHeaders });
+      if (url.pathname === "/" && method === "GET") {
+        return new Response(html, { headers: { "content-type": "text/html; charset=utf-8" } });
+      }
+      if (url.pathname === `${BASE_PATH}/stream` && method === "GET") {
+        return new Response(makeSSEStream(req.signal), { headers: sseResponseHeaders });
+      }
+      if (url.pathname === `${BASE_PATH}/logs`) {
+        if (method === "GET") {
+          return Response.json({ logs: [..._logs], total: _logs.length });
+        }
+        if (method === "DELETE") {
+          _logs.length = 0;
+          return Response.json({ ok: true });
+        }
+      }
+      return new Response(JSON.stringify({ message: "Not Found" }), {
+        status: 404,
+        headers: { "content-type": "application/json" }
+      });
+    }
+  });
+}
+async function startNodeDevtools(port) {
+  const httpModule = await import("http");
+  const server = httpModule.createServer((req, res) => {
+    const url = new URL(req.url ?? "/", `http://localhost:${port}`);
+    const method = req.method ?? "GET";
+    Object.entries(corsHeaders).forEach(([k, v]) => res.setHeader(k, v));
+    if (method === "OPTIONS") {
+      res.writeHead(204);
+      res.end();
+      return;
+    }
+    if (url.pathname === "/" && method === "GET") {
+      const streamUrl = `http://localhost:${port}${BASE_PATH}/stream`;
+      res.writeHead(200, { "content-type": "text/html; charset=utf-8" });
+      res.end(buildInspectorHtml(streamUrl));
+      return;
+    }
+    if (url.pathname === `${BASE_PATH}/stream` && method === "GET") {
+      res.writeHead(200, {
+        "content-type": "text/event-stream; charset=utf-8",
+        "cache-control": "no-cache",
+        "connection": "keep-alive"
+      });
+      res.flushHeaders?.();
+      res.write(": connected\n\n");
+      const send = (log) => {
+        try {
+          res.write(`data: ${JSON.stringify(log)}
+
+`);
+        } catch {
+        }
+      };
+      globalThis.ciphServerEmitter?.on("log", send);
+      const keepalive = setInterval(() => {
+        try {
+          res.write(": ping\n\n");
+        } catch {
+          clearInterval(keepalive);
+        }
+      }, 25e3);
+      req.on("close", () => {
+        clearInterval(keepalive);
+        globalThis.ciphServerEmitter?.off("log", send);
+      });
+      return;
+    }
+    if (url.pathname === `${BASE_PATH}/logs`) {
+      if (method === "GET") {
+        res.writeHead(200, { "content-type": "application/json" });
+        res.end(JSON.stringify({ logs: [..._logs], total: _logs.length }));
+        return;
+      }
+      if (method === "DELETE") {
+        _logs.length = 0;
+        res.writeHead(200, { "content-type": "application/json" });
+        res.end(JSON.stringify({ ok: true }));
+        return;
+      }
+    }
+    res.writeHead(404, { "content-type": "application/json" });
+    res.end(JSON.stringify({ message: "Not Found" }));
+  });
+  await new Promise((resolve, reject) => {
+    server.once("error", reject);
+    server.listen(port, () => {
+      server.off("error", reject);
+      resolve();
+    });
+  });
+}
+var isBun = typeof globalThis.Bun !== "undefined";
 async function startDevtools(port) {
   if (_started) return;
   _started = true;
   try {
-    const [httpModule, wsModule] = await Promise.all([
-      import("http"),
-      import("ws")
-    ]);
-    const WebSocketServer = wsModule.WebSocketServer;
-    const wsClients = /* @__PURE__ */ new Set();
-    const emitter = globalThis.ciphServerEmitter;
-    if (emitter) {
-      emitter.on("log", (log) => {
-        _logs.unshift(log);
-        if (_logs.length > MAX_LOGS) _logs.pop();
-        const payload = JSON.stringify(log);
-        for (const client of wsClients) {
-          if (client.readyState === 1) client.send(payload);
-        }
-      });
+    subscribeBuffer();
+    if (isBun) {
+      await startBunDevtools(port);
+    } else {
+      await startNodeDevtools(port);
     }
-    const server = httpModule.createServer((req, res) => {
-      const url = new URL(req.url ?? "/", `http://localhost:${port}`);
-      const method = req.method ?? "GET";
-      if (method === "OPTIONS") {
-        res.writeHead(204);
-        res.end();
-        return;
-      }
-      if (url.pathname === "/" && method === "GET") {
-        const wsUrl = `ws://localhost:${port}${BASE_PATH}`;
-        res.writeHead(200, { "content-type": "text/html; charset=utf-8" });
-        res.end(buildInspectorHtml(wsUrl));
-        return;
-      }
-      if (url.pathname === `${BASE_PATH}/logs`) {
-        if (method === "GET") {
-          res.writeHead(200, { "content-type": "application/json" });
-          res.end(JSON.stringify({ logs: [..._logs], total: _logs.length }));
-          return;
-        }
-        if (method === "DELETE") {
-          _logs.length = 0;
-          res.writeHead(200, { "content-type": "application/json" });
-          res.end(JSON.stringify({ ok: true }));
-          return;
-        }
-      }
-      res.writeHead(404, { "content-type": "application/json" });
-      res.end(JSON.stringify({ message: "Not Found" }));
-    });
-    const wss = new WebSocketServer({ noServer: true });
-    server.on("upgrade", (req, socket, head) => {
-      const url = new URL(req.url ?? "/", `http://localhost:${port}`);
-      if (url.pathname !== BASE_PATH) {
-        socket.destroy();
-        return;
-      }
-      wss.handleUpgrade(req, socket, head, (ws) => {
-        wsClients.add(ws);
-        ws.on("close", () => wsClients.delete(ws));
-      });
-    });
-    await new Promise((resolve, reject) => {
-      server.once("error", reject);
-      server.listen(port, () => {
-        server.off("error", reject);
-        resolve();
-      });
-    });
     console.log(`[ciph] devtools inspector \u2192 http://localhost:${port}`);
   } catch {
     _started = false;
   }
+}
+function getCiphInspectorApp() {
+  const app = new import_hono.Hono();
+  app.get("/", (c) => {
+    const host = c.req.header("host") ?? "localhost";
+    const proto = c.req.header("x-forwarded-proto") ?? "http";
+    const routePath = c.req.routePath.replace(/\/$/, "");
+    const streamUrl = `${proto}://${host}${routePath}/stream`;
+    return c.html(buildInspectorHtml(streamUrl));
+  });
+  app.get("/stream", (c) => {
+    return new Response(makeSSEStream(c.req.raw.signal), { headers: sseResponseHeaders });
+  });
+  app.get("/logs", (c) => {
+    return c.json({ logs: [..._logs], total: _logs.length });
+  });
+  app.delete("/logs", (c) => {
+    _logs.length = 0;
+    return c.json({ ok: true });
+  });
+  return app;
 }
 
 // src/index.ts
@@ -745,6 +830,7 @@ function ciph(config) {
 // Annotate the CommonJS export names for ESM import in node:
 0 && (module.exports = {
   ciph,
-  ciphExclude
+  ciphExclude,
+  getCiphInspectorApp
 });
 //# sourceMappingURL=index.js.map

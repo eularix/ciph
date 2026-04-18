@@ -15,6 +15,10 @@ export type { CiphProviderProps, CiphDevtoolsConfig } from "./context"
 export { autoInitClientEmitter, emitClientLog } from "./devtools/emitter"
 export type { CiphClientEmitter } from "./devtools/emitter"
 
+// Standalone Inspector
+export { CiphInspector } from "./devtools/CiphInspector"
+export type { CiphInspectorProps } from "./devtools/CiphInspector"
+
 // Re-export core error type for convenience
 export { CiphError } from "@ciph/core"
 export type { CiphErrorCode } from "@ciph/core"

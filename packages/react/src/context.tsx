@@ -23,7 +23,7 @@ export interface CiphDevtoolsConfig {
   /** Panel open by default. Default: false */
   defaultOpen?: boolean
   /** Panel position. Default: "bottom-right" */
-  position?: "bottom-right" | "bottom-left" | "top-right" | "top-left"
+  position?: "bottom-right" | "bottom-left" | "top-right" | "top-left" | "bottom" | "top" | "left" | "right"
 }
 
 // ─── Provider ─────────────────────────────────────────────────────────────────
@@ -93,7 +93,7 @@ export function CiphProvider({ children, devtools: devtoolsConfig, ...config }: 
   return (
     <CiphContext.Provider value={client}>
       {children}
-      {devtoolsEnabled && <CiphDevtoolsPanel {...panelProps} />}
+      {devtoolsEnabled && <CiphDevtoolsPanel client={client} {...panelProps} />}
     </CiphContext.Provider>
   )
 }

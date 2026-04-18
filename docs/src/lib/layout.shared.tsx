@@ -1,10 +1,32 @@
 import type { BaseLayoutProps } from 'fumadocs-ui/layouts/shared';
-import { appName, docsRoute, gitConfig } from './shared';
+import Image from 'next/image';
+import { docsRoute, gitConfig } from './shared';
+
+const NavLogo = () => (
+  <span className="flex items-center">
+    <Image
+      src="/logo-white.svg"
+      alt="Ciph"
+      width={64}
+      height={24}
+      className="hidden dark:block"
+      priority
+    />
+    <Image
+      src="/logo-black.svg"
+      alt="Ciph"
+      width={64}
+      height={24}
+      className="block dark:hidden"
+      priority
+    />
+  </span>
+);
 
 export function baseOptions(): BaseLayoutProps {
   return {
     nav: {
-      title: appName,
+      title: <NavLogo />,
     },
     links: [
       {
@@ -15,10 +37,6 @@ export function baseOptions(): BaseLayoutProps {
       {
         text: 'Generate Key',
         url: '/generate-key',
-      },
-      {
-        text: 'Search',
-        url: '/docs?search=true',
       },
     ],
     githubUrl: `https://github.com/${gitConfig.user}/${gitConfig.repo}`,

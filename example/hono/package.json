@@ -1,7 +1,7 @@
 {
   "name": "backend",
   "scripts": {
-    "dev": "bun --hot src/index.ts"
+    "dev": "NODE_ENV=development bun --hot src/index.ts"
   },
   "dependencies": {
     "@ciph/core": "workspace:*",

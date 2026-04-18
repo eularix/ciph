@@ -1,7 +1,9 @@
 import * as core from "@ciph/core"
 import type { CiphErrorCode, CiphServerLog } from "@ciph/core"
 import type { Context, MiddlewareHandler, Next } from "hono"
-import { autoInitEmitter, startDevtools } from "./devtools"
+import { autoInitEmitter, startDevtools, getCiphInspectorApp } from "./devtools"
+
+export { getCiphInspectorApp }
 
 const CIPH_EXCLUDE_KEY = "ciph.exclude.route"
 
