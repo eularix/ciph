@@ -7,7 +7,6 @@ Ciph uses a sophisticated multi-package CI/CD pipeline with independent versioni
 ### Packages
 
 - `@ciph/core` - Core crypto primitives
-- `@ciph/client` - Frontend HTTP client
 - `@ciph/hono` - Hono middleware
 - `@ciph/react` - React wrapper
 - `@ciph/devtools-client` - Browser devtools panel
@@ -66,7 +65,6 @@ pnpm changeset add --packages @ciph/core --type minor --message "Your change"
 ```
 ? Which packages would you like to include? (space to select)
  ◉ @ciph/core
- ◉ @ciph/client
  ○ @ciph/hono
  ○ @ciph/react
 
@@ -89,7 +87,7 @@ This creates a file like `.changeset/add-v2-ecdh.md`:
 ```markdown
 ---
 "@ciph/core": minor
-"@ciph/client": minor
+"@ciph/react": minor
 "@ciph/hono": minor
 ---
 
