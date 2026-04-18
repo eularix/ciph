@@ -1,6 +1,6 @@
 {
   "name": "@ciph/devtools-client",
-  "version": "0.1.0",
+  "version": "0.2.0-beta.1",
   "type": "module",
   "description": "Ciph DevTools client for inspecting encrypted HTTP traffic",
   "main": "./dist/index.js",
