@@ -1,0 +1,133 @@
+name: Beta Release
+
+on:
+  push:
+    branches:
+      - dev
+    paths:
+      - 'packages/**'
+      - 'pnpm-lock.yaml'
+      - '.github/workflows/beta-release.yml'
+
+permissions:
+  contents: write
+  pull-requests: write
+
+env:
+  TURBO_TOKEN: ${{ secrets.TURBO_TOKEN }}
+  TURBO_TEAM: ${{ secrets.TURBO_TEAM }}
+
+jobs:
+  detect-and-bump:
+    name: Detect Changes & Bump Beta
+    runs-on: ubuntu-latest
+    outputs:
+      changed-dirs: ${{ steps.detect.outputs.directories }}
+      changed-packages: ${{ steps.detect.outputs.packages }}
+      has-changes: ${{ steps.detect.outputs.has-changes }}
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
+
+      - uses: pnpm/action-setup@v4
+        with:
+          version: 9
+
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 20
+          cache: pnpm
+
+      - name: Detect changed packages
+        id: detect
+        run: |
+          RESULT=$(node scripts/detect-changed-packages.js origin/main)
+          DIRS=$(echo "$RESULT" | jq -r '.directories | join(",")')
+          PKGS=$(echo "$RESULT" | jq -r '.packages | join(",")')
+          HAS_CHANGES=$([ -z "$DIRS" ] && echo "false" || echo "true")
+
+          echo "directories=$DIRS" >> "$GITHUB_OUTPUT"
+          echo "packages=$PKGS" >> "$GITHUB_OUTPUT"
+          echo "has-changes=$HAS_CHANGES" >> "$GITHUB_OUTPUT"
+
+          echo "Changed dirs: $DIRS"
+          echo "Changed packages: $PKGS"
+
+      - name: Bump beta versions
+        if: steps.detect.outputs.has-changes == 'true'
+        env:
+          CHANGED_DIRS: ${{ steps.detect.outputs.directories }}
+        run: |
+          DIRS_ARRAY=$(echo "$CHANGED_DIRS" | tr ',' '\n' | jq -Rs 'split("\n") | map(select(length > 0))')
+          node scripts/bump-beta-versions.js "$DIRS_ARRAY"
+
+      - name: Commit version bumps
+        if: steps.detect.outputs.has-changes == 'true'
+        run: |
+          git config user.name "github-actions[bot]"
+          git config user.email "github-actions[bot]@users.noreply.github.com"
+          git add packages/*/package.json
+          git commit -m "chore: bump beta versions for dev release"
+          git push
+
+  beta-publish:
+    name: Publish Beta to npm
+    runs-on: ubuntu-latest
+    needs: detect-and-bump
+    if: needs.detect-and-bump.outputs.has-changes == 'true'
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
+
+      - uses: pnpm/action-setup@v4
+        with:
+          version: 9
+
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 20
+          cache: pnpm
+          registry-url: 'https://registry.npmjs.org'
+
+      - name: Install dependencies
+        run: pnpm install --frozen-lockfile
+
+      - name: Build all packages
+        run: pnpm turbo build
+
+      - name: Publish beta packages
+        env:
+          CHANGED_PACKAGES: ${{ needs.detect-and-bump.outputs.changed-packages }}
+          NODE_AUTH_TOKEN: ${{ secrets.NPM_TOKEN }}
+        run: |
+          IFS=',' read -ra PKGS <<< "$CHANGED_PACKAGES"
+          for PKG in "${PKGS[@]}"; do
+            for pkg_dir in packages/*/; do
+              if grep -q "\"name\": \"$PKG\"" "$pkg_dir/package.json" 2>/dev/null; then
+                (cd "$pkg_dir" && pnpm publish --tag beta)
+              fi
+            done
+          done
+
+      - name: Create git tags
+        env:
+          CHANGED_DIRS: ${{ needs.detect-and-bump.outputs.changed-dirs }}
+        run: |
+          git config user.name "github-actions[bot]"
+          git config user.email "github-actions[bot]@users.noreply.github.com"
+
+          IFS=',' read -ra DIRS <<< "$CHANGED_DIRS"
+          for DIR in "${DIRS[@]}"; do
+            if [ -f "packages/$DIR/package.json" ]; then
+              VERSION=$(grep '"version"' "packages/$DIR/package.json" | grep -oE '[0-9]+\.[0-9]+\.[0-9]+-beta\.[0-9]+' | head -1)
+              PKG_NAME=$(grep '"name"' "packages/$DIR/package.json" | grep -oE '@ciph/[^"]+' | head -1)
+              if [ ! -z "$VERSION" ] && [ ! -z "$PKG_NAME" ]; then
+                TAG="beta-${PKG_NAME##*/}-${VERSION}"
+                git tag "$TAG"
+                echo "Created tag: $TAG"
+              fi
+            fi
+          done
+          git push origin --tags || echo "No tags to push"
