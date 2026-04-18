@@ -1,0 +1,116 @@
+---
+title: "React"
+description: "Ciph client integration for React applications"
+---
+
+# React Client
+
+Use the `@ciph/react` package in your React applications for transparent HTTP encryption.
+
+## Installation
+
+```bash
+pnpm add @ciph/react @ciph/core
+```
+
+## Setup
+
+Create a client instance:
+
+```typescript
+// lib/ciph.ts
+import { createClient } from '@ciph/react'
+
+export const ciph = createClient({
+  baseURL: import.meta.env.VITE_API_URL,
+  secret: import.meta.env.VITE_CIPH_SECRET,
+  fingerprintOptions: {
+    includeScreen: true,
+    includeTimezone: true,
+  }
+})
+```
+
+## Usage in Components
+
+```typescript
+import { useEffect, useState } from 'react'
+import { ciph } from '@/lib/ciph'
+
+export default function UsersList() {
+  const [users, setUsers] = useState([])
+  const [loading, setLoading] = useState(true)
+
+  useEffect(() => {
+    ciph.get('/api/users').then((res) => {
+      setUsers(res.data)
+      setLoading(false)
+    })
+  }, [])
+
+  if (loading) return <div>Loading...</div>
+
+  return (
+    <ul>
+      {users.map((user) => (
+        <li key={user.id}>{user.name}</li>
+      ))}
+    </ul>
+  )
+}
+```
+
+## Creating Data
+
+```typescript
+async function createUser(name: string) {
+  const response = await ciph.post('/api/users', { name })
+  // response.data is automatically decrypted
+  return response.data
+}
+```
+
+## Updating Data
+
+```typescript
+async function updateUser(id: string, updates: Partial<User>) {
+  await ciph.patch(`/api/users/${id}`, updates)
+}
+```
+
+## Error Handling
+
+```typescript
+try {
+  const data = await ciph.post('/api/login', credentials)
+} catch (error) {
+  // CIPH003: Device changed (auto-retried, rare)
+  // CIPH002: Wrong secret (config error)
+  // CIPH004: Corrupted response
+  if (error.response?.status === 401) {
+    console.error('Unauthorized:', error.response.data.code)
+  }
+}
+```
+
+## DevTools
+
+In development, use the floating DevTools panel to inspect encrypted requests:
+
+```typescript
+import { CiphDevtools } from '@ciph/devtools-client'
+
+export default function App() {
+  return (
+    <>
+      <YourApp />
+      <CiphDevtools />
+    </>
+  )
+}
+```
+
+Press `Ctrl+Shift+C` to toggle the panel. See plaintext requests/responses side-by-side with their encrypted versions.
+
+Next: [Full API Reference →](/docs/client/api)
+

@@ -1,0 +1,132 @@
+---
+title: "Svelte"
+description: "Ciph client integration for Svelte applications (Coming Soon)"
+---
+
+# Svelte (Coming Soon)
+
+Svelte support for `@ciph/react` is coming in a future release.
+
+For now, you can:
+- Use `@ciph/react` directly in Svelte (axios-compatible)
+- Set up in a store module:
+
+```typescript
+// lib/ciph.ts
+import { createClient } from '@ciph/react'
+
+export const ciph = createClient({
+  baseURL: import.meta.env.VITE_API_URL,
+  secret: import.meta.env.VITE_CIPH_SECRET,
+})
+```
+
+```svelte
+<script>
+import { onMount } from 'svelte'
+import { ciph } from '$lib/ciph'
+
+let users = []
+let loading = true
+
+onMount(async () => {
+  const res = await ciph.get('/api/users')
+  users = res.data
+  loading = false
+})
+</script>
+
+{#if loading}
+  <p>Loading...</p>
+{:else}
+  <ul>
+    {#each users as user (user.id)}
+      <li>{user.name}</li>
+    {/each}
+  </ul>
+{/if}
+```
+
+**Status**: Enhanced Svelte integration planned for a future release.
+
+Contributions welcome!
+- **SvelteKit Adapter**: Built-in SvelteKit load functions
+- **Svelte 5 Support**: Latest Svelte features
+- **Type Safety**: Full TypeScript support
+
+## Current Alternatives
+
+### Using @ciph/client Directly
+
+```svelte
+<script>
+  import { createClient } from '@ciph/client';
+  import { onMount } from 'svelte';
+
+  let data = null;
+  let loading = false;
+
+  const ciph = createClient({
+    baseURL: 'http://localhost:4008',
+    serverPublicKey: import.meta.env.VITE_CIPH_SERVER_PUBLIC_KEY,
+  });
+
+  onMount(async () => {
+    loading = true;
+    try {
+      const res = await ciph.get('/api/employees');
+      data = res.data;
+    } catch (err) {
+      console.error(err);
+    } finally {
+      loading = false;
+    }
+  });
+</script>
+
+<div>
+  {#if loading}
+    Loading...
+  {:else if data}
+    {JSON.stringify(data)}
+  {/if}
+</div>
+```
+
+### Using SvelteKit Load
+
+```ts
+// src/routes/+page.server.ts
+import { createClient } from '@ciph/client';
+
+export async function load() {
+  const ciph = createClient({
+    baseURL: 'http://localhost:4008',
+    serverPublicKey: process.env.VITE_CIPH_SERVER_PUBLIC_KEY!,
+  });
+
+  const res = await ciph.get('/api/employees');
+  return {
+    employees: res.data,
+  };
+}
+```
+
+## Timeline
+
+- **v0.3.0** (Q3 2026): Initial Svelte adapter
+- **v0.4.0** (Q4 2026): SvelteKit native integration
+- **v1.0.0** (2027): Stable Svelte support
+
+## Interested in Contributing?
+
+Help us build the Svelte client! See [CONTRIBUTING.md](https://github.com/eularix/ciph/blob/main/CONTRIBUTING.md) for the maintainer workflow.
+
+```bash
+# Start the development environment
+pnpm install
+pnpm dev
+
+# Create a changeset for your work
+pnpm changeset
+```

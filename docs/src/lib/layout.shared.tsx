@@ -23,7 +23,18 @@ const NavLogo = () => (
   </span>
 );
 
-export function baseOptions(): BaseLayoutProps {
+// Navbar config for docs pages (minimal, no extra links)
+export function docsOptions(): BaseLayoutProps {
+  return {
+    nav: {
+      title: <NavLogo />,
+    },
+    githubUrl: `https://github.com/${gitConfig.user}/${gitConfig.repo}`,
+  };
+}
+
+// Navbar config for home & generate-key pages (full nav)
+export function pageOptions(): BaseLayoutProps {
   return {
     nav: {
       title: <NavLogo />,
@@ -41,4 +52,9 @@ export function baseOptions(): BaseLayoutProps {
     ],
     githubUrl: `https://github.com/${gitConfig.user}/${gitConfig.repo}`,
   };
+}
+
+// Legacy export for backward compatibility
+export function baseOptions(): BaseLayoutProps {
+  return docsOptions();
 }

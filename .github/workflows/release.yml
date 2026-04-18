@@ -1,27 +1,98 @@
 name: Release
+
 on:
   push:
-    tags: ['*']
+    branches:
+      - main
+    paths:
+      - '.changeset/**'
+      - 'packages/**'
+      - 'package.json'
+      - 'pnpm-lock.yaml'
+
+permissions:
+  contents: write
+  pull-requests: write
 
 jobs:
-  release:
+  # Create or update version PR
+  version:
+    name: Create Version PR
     runs-on: ubuntu-latest
     steps:
-      - uses: actions/checkout@v4
+      - name: Checkout
+        uses: actions/checkout@v4
         with:
           fetch-depth: 0
-      - uses: pnpm/action-setup@v4
+
+      - name: Setup pnpm
+        uses: pnpm/action-setup@v4
         with:
           version: 9
-      - uses: actions/setup-node@v4
+
+      - name: Setup Node
+        uses: actions/setup-node@v4
         with:
           node-version: 20
           cache: pnpm
-      - run: pnpm install --frozen-lockfile
-      - run: pnpm build
-      - run: npx changeset version
-      - run: npx changeset publish
+
+      - name: Install dependencies
+        run: pnpm install --frozen-lockfile
+
+      - name: Create Version PR
+        uses: changesets/action@v1
+        with:
+          version: pnpm changeset version
+          commit: 'chore: bump package versions'
+          title: 'chore: bump package versions'
+          createGithubReleases: aggregate
         env:
           GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
-          NPM_TOKEN: ${{ secrets.NPM_TOKEN }}
+
+  # Detect if we're on a version bump commit and publish
+  publish:
+    name: Publish Packages
+    if: always()
+    runs-on: ubuntu-latest
+    needs: version
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
+
+      - name: Setup pnpm
+        uses: pnpm/action-setup@v4
+        with:
+          version: 9
+
+      - name: Setup Node
+        uses: actions/setup-node@v4
+        with:
+          node-version: 20
+          cache: pnpm
+          registry-url: 'https://registry.npmjs.org'
+
+      - name: Install dependencies
+        run: pnpm install --frozen-lockfile
+
+      - name: Build all packages
+        run: pnpm turbo build
+
+      - name: Publish packages
+        uses: changesets/action@v1
+        with:
+          publish: pnpm changeset publish
+          createGithubReleases: aggregate
+        env:
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+          NODE_AUTH_TOKEN: ${{ secrets.NPM_TOKEN }}
+
+      - name: Generate release notes
+        if: always()
+        run: |
+          echo "## 📦 Release Summary" >> $GITHUB_STEP_SUMMARY
+          echo "" >> $GITHUB_STEP_SUMMARY
+          echo "### Published Packages" >> $GITHUB_STEP_SUMMARY
+          ls -la packages/ | grep "^d" | awk '{print "- " $NF}' >> $GITHUB_STEP_SUMMARY || echo "No packages found" >> $GITHUB_STEP_SUMMARY
 

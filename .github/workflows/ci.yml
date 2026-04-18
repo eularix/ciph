@@ -6,11 +6,19 @@ on:
   pull_request:
     branches: [main]
 
+env:
+  TURBO_TOKEN: ${{ secrets.TURBO_TOKEN }}
+  TURBO_TEAM: ${{ secrets.TURBO_TEAM }}
+
 jobs:
-  test:
+  # Per-package linting and type-checking
+  quality:
+    name: Code Quality
     runs-on: ubuntu-latest
     steps:
       - uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
       - uses: pnpm/action-setup@v4
         with:
           version: 9
@@ -21,12 +29,15 @@ jobs:
       - run: pnpm install --frozen-lockfile
       - run: pnpm lint
       - run: pnpm type-check
-      - run: pnpm test --coverage
 
-  build:
+  # Per-package test coverage
+  test:
+    name: Tests
     runs-on: ubuntu-latest
     steps:
       - uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
       - uses: pnpm/action-setup@v4
         with:
           version: 9
@@ -35,4 +46,76 @@ jobs:
           node-version: 20
           cache: pnpm
       - run: pnpm install --frozen-lockfile
-      - run: pnpm build
+      - run: pnpm test --coverage
+      - name: Upload coverage reports
+        uses: codecov/codecov-action@v4
+        if: always()
+        with:
+          token: ${{ secrets.CODECOV_TOKEN }}
+          fail_ci_if_error: false
+
+  # Build each package in packages/
+  build:
+    name: Build
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
+      - uses: pnpm/action-setup@v4
+        with:
+          version: 9
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 20
+          cache: pnpm
+      - run: pnpm install --frozen-lockfile
+      - run: pnpm turbo build
+      - name: Verify build outputs
+        run: |
+          for pkg in packages/*/; do
+            if [ -f "$pkg/package.json" ]; then
+              if [ ! -d "$pkg/dist" ]; then
+                echo "❌ Missing dist/ in $(basename $pkg)"
+                exit 1
+              fi
+              echo "✅ $(basename $pkg) built successfully"
+            fi
+          done
+
+  # Changeset validation (on PRs, verify changesets exist if needed)
+  changeset:
+    name: Changesets
+    runs-on: ubuntu-latest
+    if: github.event_name == 'pull_request'
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
+      - uses: pnpm/action-setup@v4
+        with:
+          version: 9
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 20
+          cache: pnpm
+      - run: pnpm install --frozen-lockfile
+      - run: pnpm changeset status --since origin/main
+        continue-on-error: true
+      - name: Comment on PR if no changesets
+        uses: actions/github-script@v7
+        if: github.event_name == 'pull_request'
+        with:
+          script: |
+            const fs = require('fs');
+            const changesetDir = '.changeset';
+            const files = fs.readdirSync(changesetDir).filter(f => f.endsWith('.md') && f !== 'README.md');
+            
+            if (files.length === 0) {
+              github.rest.issues.createComment({
+                issue_number: context.issue.number,
+                owner: context.repo.owner,
+                repo: context.repo.repo,
+                body: '⚠️ No changesets detected. If your changes affect any packages in `packages/`, please add a changeset:\n\n```bash\npnpm changeset\n```\n\nSee `.changeset/README.md` for details.'
+              });
+            }

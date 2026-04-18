@@ -1,12 +1,51 @@
 ---
-title: "Vue (Coming Soon)"
-description: "Vue.js integration for Ciph client (in development)"
+title: "Vue"
+description: "Ciph client integration for Vue.js applications (Coming Soon)"
 ---
 
 # Vue (Coming Soon)
 
-Vue.js client integration is under development.
+Vue.js support for `@ciph/react` is coming in a future release.
 
-**Status**: Planned for future release.
+For now, you can:
+- Use `@ciph/react` directly in Vue (axios-compatible)
+- Set up in a composable:
 
-Stay tuned for updates!
+```typescript
+// composables/useCiph.ts
+import { createClient } from '@ciph/react'
+
+const ciph = createClient({
+  baseURL: import.meta.env.VITE_API_URL,
+  secret: import.meta.env.VITE_CIPH_SECRET,
+})
+
+export function useCiph() {
+  return ciph
+}
+```
+
+```vue
+<script setup>
+import { ref, onMounted } from 'vue'
+import { useCiph } from '@/composables/useCiph'
+
+const ciph = useCiph()
+const users = ref([])
+
+onMounted(async () => {
+  const res = await ciph.get('/api/users')
+  users.value = res.data
+})
+</script>
+
+<template>
+  <ul>
+    <li v-for="user in users" :key="user.id">{{ user.name }}</li>
+  </ul>
+</template>
+```
+
+**Status**: Enhanced Vue integration planned for a future release.
+
+Contributions welcome!

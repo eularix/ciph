@@ -32,6 +32,7 @@ var index_exports = {};
 __export(index_exports, {
   ciph: () => ciph,
   ciphExclude: () => ciphExclude,
+  ciphPublicKeyEndpoint: () => ciphPublicKeyEndpoint,
   getCiphInspectorApp: () => getCiphInspectorApp
 });
 module.exports = __toCommonJS(index_exports);
@@ -453,6 +454,16 @@ function getCiphInspectorApp() {
 }
 
 // src/index.ts
+function ciphPublicKeyEndpoint(publicKey) {
+  if (!publicKey || publicKey.trim().length === 0) {
+    throw new Error(
+      "[ciph] ciphPublicKeyEndpoint requires a non-empty publicKey. Run 'npx ciph generate-keys' to generate both keys, then provide VITE_CIPH_SERVER_PUBLIC_KEY."
+    );
+  }
+  return async (c) => {
+    return c.json({ publicKey }, 200);
+  };
+}
 var CIPH_EXCLUDE_KEY = "ciph.exclude.route";
 var DEFAULT_EXCLUDE_ROUTES = ["/health", "/ciph", "/ciph/*", "/ciph-public-key"];
 var DEFAULT_MAX_PAYLOAD_SIZE = 10485760;
@@ -666,7 +677,7 @@ async function handleV2(c, cx, state, config, next, encryptFn) {
     const rawShared = await core.deriveECDHBits(privateKey, clientPublicKey);
     sessionKey = await core.deriveSessionKey(rawShared);
     state.ecdhSessionKeyDerived = true;
-  } catch {
+  } catch (error) {
     state.errorCode = "CIPH007";
     state.status = 401;
     emitDevLog(c, state);
@@ -683,7 +694,7 @@ async function handleV2(c, cx, state, config, next, encryptFn) {
   try {
     const decrypted = await core.decrypt(encryptedFp, sessionKey);
     fpComponents = JSON.parse(decrypted.plaintext);
-  } catch {
+  } catch (error) {
     state.errorCode = "CIPH002";
     state.status = 401;
     emitDevLog(c, state);
@@ -831,6 +842,7 @@ function ciph(config) {
 0 && (module.exports = {
   ciph,
   ciphExclude,
+  ciphPublicKeyEndpoint,
   getCiphInspectorApp
 });
 //# sourceMappingURL=index.js.map

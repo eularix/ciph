@@ -6,9 +6,80 @@ import {
   deriveKey,
   encrypt,
   encryptFingerprint,
-  generateFingerprint
+  generateFingerprint,
+  generateKeyPair,
+  deriveECDHBits,
+  deriveSessionKey,
+  deriveRequestKey
 } from "@ciph/core";
 var cachedFingerprint = null;
+var cachedClientKeyPair = null;
+var cachedServerPublicKey = null;
+var cachedSessionKey = null;
+function detectMode(config) {
+  const hasServerPubKey = config.serverPublicKey != null;
+  const hasPublicKeyEndpoint = config.publicKeyEndpoint != null;
+  const hasSecret = config.secret != null;
+  if (hasServerPubKey || hasPublicKeyEndpoint) {
+    return {
+      isV2: true,
+      serverPublicKey: config.serverPublicKey,
+      publicKeyEndpoint: config.publicKeyEndpoint ?? new URL("/ciph-public-key", config.baseURL).href
+    };
+  }
+  if (hasSecret) {
+    console.warn(
+      "[ciph] Using deprecated v1 (symmetric) mode. Migrate to v2 by providing 'serverPublicKey' or 'publicKeyEndpoint' in config."
+    );
+    return { isV2: false };
+  }
+  throw new Error(
+    "[ciph] CiphClientConfig requires either v2 config (serverPublicKey or publicKeyEndpoint) or v1 config (deprecated secret)."
+  );
+}
+async function fetchServerPublicKey(endpoint) {
+  try {
+    const response = await fetch(endpoint);
+    if (!response.ok) {
+      throw new Error(`Failed to fetch server public key: ${response.status} ${response.statusText}`);
+    }
+    const data = await response.json();
+    if (!data.publicKey || typeof data.publicKey !== "string") {
+      throw new Error("Invalid server public key response format");
+    }
+    return data.publicKey;
+  } catch (error) {
+    throw new Error(`Failed to fetch server public key from ${endpoint}: ${String(error)}`);
+  }
+}
+async function getOrCreateClientKeyPair() {
+  if (cachedClientKeyPair) {
+    return cachedClientKeyPair;
+  }
+  cachedClientKeyPair = await generateKeyPair();
+  return cachedClientKeyPair;
+}
+async function getOrFetchServerPublicKey(config) {
+  if (cachedServerPublicKey) {
+    return cachedServerPublicKey;
+  }
+  let pubKey;
+  if (config.serverPublicKey) {
+    pubKey = config.serverPublicKey;
+  } else if (config.publicKeyEndpoint) {
+    pubKey = await fetchServerPublicKey(config.publicKeyEndpoint);
+  } else {
+    throw new Error("[ciph] No serverPublicKey or publicKeyEndpoint provided");
+  }
+  cachedServerPublicKey = pubKey;
+  return pubKey;
+}
+async function deriveV2Keys(clientKeyPair, serverPublicKey, fingerprint) {
+  const rawShared = await deriveECDHBits(clientKeyPair.privateKey, serverPublicKey);
+  const sessionKey = await deriveSessionKey(rawShared);
+  const requestKey = await deriveRequestKey(sessionKey, fingerprint);
+  return { sessionKey, requestKey };
+}
 function normalizePath(url) {
   try {
     const parsed = new URL(url, "http://localhost");
@@ -102,6 +173,7 @@ function createClient(config) {
   const excludeRoutes = config.excludeRoutes ?? ["/health"];
   const onFingerprintMismatch = config.onFingerprintMismatch ?? "retry";
   const fallbackToPlain = config.fallbackToPlain ?? false;
+  const mode = detectMode(config);
   const instance = axios.create({
     baseURL: config.baseURL,
     ...config.headers !== void 0 && { headers: config.headers }
@@ -121,6 +193,54 @@ function createClient(config) {
       const shouldEncrypt = req.encrypt ?? true;
       if (!shouldEncrypt) {
         return req;
+      }
+      if (mode.isV2) {
+        try {
+          const built2 = getBrowserFingerprintComponents(config.fingerprintOptions, req.fingerprintFields);
+          const fpResult = await generateFingerprint(built2.components);
+          cachedFingerprint = fpResult.fingerprint;
+          req._ciphFingerprint = fpResult.fingerprint;
+          const clientKeyPair = await getOrCreateClientKeyPair();
+          req._ciphV2ClientPublicKey = clientKeyPair.publicKey;
+          req.headers.set("X-Client-PublicKey", clientKeyPair.publicKey);
+          const serverPublicKey = await getOrFetchServerPublicKey(config);
+          const keys = await deriveV2Keys(clientKeyPair, serverPublicKey, fpResult.fingerprint);
+          req._ciphV2SessionKey = keys.sessionKey;
+          req._ciphV2RequestKey = keys.requestKey;
+          cachedSessionKey = keys.sessionKey;
+          const fpJson = JSON.stringify(built2.components);
+          const encryptedFp = await encrypt(fpJson, keys.sessionKey);
+          req.headers.set("X-Fingerprint", encryptedFp.ciphertext);
+          const method2 = (req.method ?? "get").toUpperCase();
+          const hasBody2 = method2 !== "GET" && method2 !== "HEAD" && typeof req.data !== "undefined";
+          if (!hasBody2) {
+            req._ciphEncryptedBody = null;
+            return req;
+          }
+          if (typeof req._ciphPlainBody === "string" && req.headers.get("Content-Type") === "text/plain") {
+            req._ciphEncryptedBody = req._ciphPlainBody;
+            return req;
+          }
+          try {
+            const plainText = typeof req.data === "string" ? req.data : JSON.stringify(req.data);
+            const encrypted = await encrypt(plainText, keys.requestKey);
+            req.data = encrypted.ciphertext;
+            req._ciphEncryptedBody = encrypted.ciphertext;
+            req.headers.set("Content-Type", "text/plain");
+          } catch (error) {
+            if (fallbackToPlain) {
+              req._ciphEncryptedBody = null;
+              return req;
+            }
+            throw new CiphError("CIPH004", "Request body encryption failed", error);
+          }
+          return req;
+        } catch (error) {
+          if (fallbackToPlain) {
+            return req;
+          }
+          throw error;
+        }
       }
       const built = getBrowserFingerprintComponents(config.fingerprintOptions, req.fingerprintFields);
       const fingerprintPayload = JSON.stringify({
@@ -167,12 +287,18 @@ function createClient(config) {
       if (typeof encryptedBody !== "string") {
         return response;
       }
-      const fingerprint = req._ciphFingerprint ?? cachedFingerprint;
-      if (!fingerprint) {
-        throw new CiphError("CIPH001", "Missing fingerprint for response decryption");
-      }
       try {
-        const key = await deriveKey(config.secret, fingerprint);
+        let key;
+        if (mode.isV2) {
+          key = req._ciphV2RequestKey ?? "";
+          if (!key) throw new Error("Missing v2 request key");
+        } else {
+          const fingerprint = req._ciphFingerprint ?? cachedFingerprint;
+          if (!fingerprint) {
+            throw new CiphError("CIPH001", "Missing fingerprint for response decryption");
+          }
+          key = await deriveKey(config.secret, fingerprint);
+        }
         const decrypted = await decrypt(encryptedBody, key);
         response.data = JSON.parse(decrypted.plaintext);
       } catch (error) {
@@ -196,24 +322,57 @@ function createClient(config) {
         if (onFingerprintMismatch === "ignore") {
           throw error;
         }
-        cachedFingerprint = null;
-        const refreshed = getBrowserFingerprintComponents(config.fingerprintOptions, req.fingerprintFields);
-        const refreshedPayload = JSON.stringify({
-          ip: refreshed.components.ip ?? "",
-          userAgent: req.headers.get("user-agent") ?? refreshed.components.userAgent ?? "node"
-        });
+        if (mode.isV2) {
+          cachedFingerprint = null;
+          cachedClientKeyPair = null;
+          cachedSessionKey = null;
+        } else {
+          cachedFingerprint = null;
+        }
         req._ciphRetried = true;
-        req._ciphFingerprint = refreshedPayload;
-        const encryptedFingerprint = await encryptFingerprint(refreshedPayload, config.secret);
-        req.headers.set("X-Fingerprint", encryptedFingerprint);
-        const method = (req.method ?? "get").toUpperCase();
-        const hasBody = method !== "GET" && method !== "HEAD" && typeof req._ciphPlainBody !== "undefined";
-        if (hasBody && (req.encrypt ?? true)) {
-          const key = await deriveKey(config.secret, refreshedPayload);
-          const plainText = typeof req._ciphPlainBody === "string" ? req._ciphPlainBody : JSON.stringify(req._ciphPlainBody);
-          const encryptedBody = await encrypt(plainText, key);
-          req.data = encryptedBody.ciphertext;
-          req.headers.set("Content-Type", "text/plain");
+        const built = getBrowserFingerprintComponents(config.fingerprintOptions, req.fingerprintFields);
+        if (mode.isV2) {
+          try {
+            const fpResult = await generateFingerprint(built.components);
+            req._ciphFingerprint = fpResult.fingerprint;
+            const clientKeyPair = await getOrCreateClientKeyPair();
+            req._ciphV2ClientPublicKey = clientKeyPair.publicKey;
+            req.headers.set("X-Client-PublicKey", clientKeyPair.publicKey);
+            const serverPublicKey = await getOrFetchServerPublicKey(config);
+            const keys = await deriveV2Keys(clientKeyPair, serverPublicKey, fpResult.fingerprint);
+            req._ciphV2SessionKey = keys.sessionKey;
+            req._ciphV2RequestKey = keys.requestKey;
+            const fpJson = JSON.stringify(built.components);
+            const encryptedFp = await encrypt(fpJson, keys.sessionKey);
+            req.headers.set("X-Fingerprint", encryptedFp.ciphertext);
+            const method = (req.method ?? "get").toUpperCase();
+            const hasBody = method !== "GET" && method !== "HEAD" && typeof req._ciphPlainBody !== "undefined";
+            if (hasBody && (req.encrypt ?? true)) {
+              const plainText = typeof req._ciphPlainBody === "string" ? req._ciphPlainBody : JSON.stringify(req._ciphPlainBody);
+              const encrypted = await encrypt(plainText, keys.requestKey);
+              req.data = encrypted.ciphertext;
+              req.headers.set("Content-Type", "text/plain");
+            }
+          } catch (retryError) {
+            throw new CiphError("CIPH003", "Failed to regenerate v2 keys for retry", retryError);
+          }
+        } else {
+          const refreshedPayload = JSON.stringify({
+            ip: built.components.ip ?? "",
+            userAgent: req.headers.get("user-agent") ?? built.components.userAgent ?? "node"
+          });
+          req._ciphFingerprint = refreshedPayload;
+          const encryptedFingerprint = await encryptFingerprint(refreshedPayload, config.secret);
+          req.headers.set("X-Fingerprint", encryptedFingerprint);
+          const method = (req.method ?? "get").toUpperCase();
+          const hasBody = method !== "GET" && method !== "HEAD" && typeof req._ciphPlainBody !== "undefined";
+          if (hasBody && (req.encrypt ?? true)) {
+            const key = await deriveKey(config.secret, refreshedPayload);
+            const plainText = typeof req._ciphPlainBody === "string" ? req._ciphPlainBody : JSON.stringify(req._ciphPlainBody);
+            const encryptedBody = await encrypt(plainText, key);
+            req.data = encryptedBody.ciphertext;
+            req.headers.set("Content-Type", "text/plain");
+          }
         }
         try {
           return await instance.request(req);

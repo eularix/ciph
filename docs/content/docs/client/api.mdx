@@ -1,53 +1,140 @@
 ---
-title: Client API
-description: Complete TypeScript API for @ciph/client.
+title: "API Reference"
+description: "Complete API reference for @ciph/react"
 ---
 
-# Client API
 
-## `createClient(config)`
+# `createClient(config)`
 
-```ts
-interface CiphClientConfig {
-  baseURL: string
-  secret: string
-  fingerprintOptions?: {
-    includeScreen?: boolean
-    includeTimezone?: boolean
-    customFields?: Record<string, string>
-  }
-  excludeRoutes?: string[] // ["/health"]
-  onFingerprintMismatch?: "retry" | "throw" | "ignore"
-}
+Factory function to create an encrypted HTTP client.
 
-const ciph = createClient(config)
+```typescript
+import { createClient } from '@ciph/react'
+
+const ciph = createClient({
+  baseURL: import.meta.env.VITE_API_URL,
+  secret: import.meta.env.VITE_CIPH_SECRET,
+})
 ```
+
+**Configuration:**
+
+```typescript
+interface CiphClientConfig {
+  baseURL: string                 // API base URL
+  secret: string                  // Shared secret (min 32 chars)
+  
+  // Optional
+  excludeRoutes?: string[]        // Routes to skip (default: ['/health'])
+  onFingerprintMismatch?: 'retry' | 'throw' | 'ignore'  // default: 'retry'
+  fallbackToPlain?: boolean       // Fallback if encryption fails (default: false)
+  
+  fingerprintOptions?: {
+    includeScreen?: boolean       // Include screen dimensions
+    includeTimezone?: boolean     // Include timezone
+    customFields?: Record<string, string>  // Custom fingerprint data
+  }
+}
+```
+
+---
 
 ## HTTP Methods
 
-**Identical to axios:**
+All standard axios methods are available:
 
-```ts
-ciph.get<T>("/users")
-ciph.post<T>("/users", data)
-ciph.put<T>("/users/:id", data)
-ciph.patch<T>("/users/:id", data)
-ciph.delete<T>("/users/:id")
+```typescript
+// GET
+const response = await ciph.get<User>('/api/users')
+
+// POST
+const result = await ciph.post<Todo>('/api/todos', {
+  title: 'Learn Ciph',
+  completed: false
+})
+
+// PUT
+await ciph.put<Todo>('/api/todos/1', { title: 'Updated' })
+
+// PATCH
+await ciph.patch<Todo>('/api/todos/1', { completed: true })
+
+// DELETE
+await ciph.delete('/api/todos/1')
 ```
 
-**Returns `CiphResponse<T>`:**
+**Response shape:**
 
-```ts
+```typescript
 interface CiphResponse<T> {
-  data: T // plain, decrypted
-  status: number
-  ciph: {
-    coinsUsed?: number
+  data: T                // Decrypted response data
+  status: number         // HTTP status code
+  headers: AxiosHeaders  // Response headers
+  config: AxiosRequestConfig  // Request config
+}
+```
+
+---
+
+## Error Handling
+
+```typescript
+try {
+  const data = await ciph.post('/api/auth/login', credentials)
+} catch (error) {
+  if (error.response?.status === 401) {
+    // CIPH003: Fingerprint mismatch - auto-retried once
+    // CIPH002: Wrong secret
+    console.error(error.response.data.code)
   }
 }
 ```
 
-## Devtools
+---
+
+## Fingerprinting
+
+Device fingerprinting ensures encryption is device-specific. Same payload from different device = different ciphertext.
+
+```typescript
+// Default fingerprint includes:
+// - User agent
+// - Screen size
+// - Timezone
+// - Custom fields (if provided)
+
+const ciph = createClient({
+  secret: process.env.VITE_CIPH_SECRET,
+  fingerprintOptions: {
+    includeScreen: true,
+    includeTimezone: true,
+    customFields: {
+      'app-version': '1.0.0',
+      'build-id': 'abc123'
+    }
+  }
+})
+```
+
+---
+
+## Exclude Routes
+
+Skip encryption for certain endpoints:
+
+```typescript
+const ciph = createClient({
+  secret: process.env.VITE_CIPH_SECRET,
+  excludeRoutes: [
+    '/health',
+    '/status',
+    '/public/*'
+  ]
+})
+```
+
+These routes will use plain HTTP without encryption.
+
 
 ```tsx
 <CiphDevtools /> // floating panel, dev-only

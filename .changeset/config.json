@@ -1,0 +1,19 @@
+{
+  "$schema": "https://unpkg.com/changesets@2.28.0/schema.json",
+  "changelog": [
+    "@changesets/cli/changelog",
+    {
+      "repo": "github.com/eularix/ciph"
+    }
+  ],
+  "commit": false,
+  "fixed": [],
+  "linked": [],
+  "access": "public",
+  "baseBranch": "main",
+  "updateInternalDependencies": "patch",
+  "ignore": ["docs", "example"],
+  "privatePackages": {
+    "stripUnscopedChangelogTypes": true
+  }
+}

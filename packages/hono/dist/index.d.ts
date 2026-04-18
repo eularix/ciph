@@ -13,6 +13,23 @@ declare global {
 }
 declare function getCiphInspectorApp(): Hono<hono_types.BlankEnv, hono_types.BlankSchema, "/">;
 
+/**
+ * Serves the server's public key at GET /ciph-public-key.
+ * Used by v2 clients to obtain the server public key for ECDH key exchange.
+ * Always unprotected — the public key is meant to be public.
+ *
+ * Setup (recommended - use with key generation CLI):
+ * ```ts
+ * // 1. Run: npx ciph generate-keys
+ * // 2. Get both CIPH_PRIVATE_KEY and VITE_CIPH_SERVER_PUBLIC_KEY from output
+ * // 3. In your Hono app:
+ *
+ * const publicKey = process.env.VITE_CIPH_SERVER_PUBLIC_KEY
+ * app.get("/ciph-public-key", ciphPublicKeyEndpoint(publicKey))
+ * app.use("*", ciph({ privateKey: process.env.CIPH_PRIVATE_KEY }))
+ * ```
+ */
+declare function ciphPublicKeyEndpoint(publicKey: string): MiddlewareHandler;
 interface CiphHonoConfig {
     /**
      * v2 (ECDH asymmetric) — server's P-256 private key in base64url pkcs8.
@@ -69,4 +86,4 @@ interface CiphHonoConfig {
 declare function ciphExclude(): MiddlewareHandler;
 declare function ciph(config: CiphHonoConfig): MiddlewareHandler;
 
-export { type CiphHonoConfig, ciph, ciphExclude, getCiphInspectorApp };
+export { type CiphHonoConfig, ciph, ciphExclude, ciphPublicKeyEndpoint, getCiphInspectorApp };

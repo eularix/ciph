@@ -1,0 +1,114 @@
+---
+title: Changelog
+---
+
+import { Callout } from 'fumadocs-ui/components/callout';
+
+# Changelog
+
+All notable changes to Ciph packages are documented here. We follow [Semantic Versioning](https://semver.org/).
+
+## v0.2.0 (April 2026) - ECDH Asymmetric Encryption
+
+### ✨ New Features
+
+- **ECDH v2 Implementation**: Replaced symmetric shared secret with P-256 ECDH key exchange
+  - Asymmetric key negotiation via `X-Client-PublicKey` header
+  - Forward secrecy with ephemeral client keys
+  - Session-level key derivation with HKDF-SHA256
+  - Per-request device fingerprint binding
+  - Zero shared secret exposure risk
+
+### 📦 Package Updates
+
+- **@ciph/core**: Added ECDH primitives, session key derivation
+- **@ciph/client**: Full v2 mode detection, asymmetric key exchange
+- **@ciph/hono**: V2 middleware with handleV2() flow
+- **@ciph/react**: V2 client context and hooks
+
+### 🔄 Backward Compatibility
+
+- V1 symmetric mode still supported (deprecated warnings)
+- Auto-detection of v1 vs v2 based on config
+- Graceful fallback for transition period
+
+### 🛠️ Improvements
+
+- Per-package independent versioning via Changesets
+- Comprehensive CI/CD pipeline with quality gates
+- Build verification for each package
+- Automated npm publishing
+
+### 📚 Documentation
+
+- Added ECDH architecture guides
+- Updated installation instructions for v2
+- CONTRIBUTING.md with changeset workflow
+- CI/CD documentation
+
+---
+
+## v0.1.0 (March 2026) - Initial Release
+
+### ✨ Features
+
+- **@ciph/core**: AES-256-GCM encryption, HKDF key derivation, device fingerprinting
+- **@ciph/client**: Frontend HTTP client with Axios interceptors
+- **@ciph/hono**: Backend middleware for Hono framework
+- **@ciph/react**: React wrapper with context API
+- **@ciph/devtools-client**: Browser floating panel for request inspection
+- **@ciph/devtools-server**: Backend inspector UI with SSE streaming
+
+### 🔒 Security
+
+- Symmetric encryption (v1 - now deprecated)
+- AES-256-GCM for authenticated encryption
+- SHA-256 device fingerprinting
+- HKDF-SHA256 key derivation
+
+### 📦 Packages
+
+- 6 published npm packages
+- TypeScript strict mode
+- Full test coverage
+
+### 📝 Documentation
+
+- Fumadocs-based site
+- API references
+- Getting started guides
+- Error code documentation
+
+---
+
+## Upgrading
+
+<Callout type="info" title="Migration Path">
+  **v0.1 → v0.2**: No breaking changes for basic usage. See [installation guide](/docs/getting-started/installation) for v2 setup.
+  
+  V1 mode still works but is deprecated. New projects should use v2 ECDH.
+</Callout>
+
+### V1 to V2 Migration
+
+```typescript
+// V1 (deprecated)
+const ciph = createClient({
+  baseURL: 'http://localhost:4008',
+  secret: 'your-shared-secret-min-32-chars' // ❌ Deprecated
+})
+
+// V2 (recommended)
+const ciph = createClient({
+  baseURL: 'http://localhost:4008',
+  serverPublicKey: 'base64url-p256-public-key' // ✅ Recommended
+})
+```
+
+---
+
+## See Also
+
+- [Installation Guide](/docs/getting-started/installation)
+- [CONTRIBUTING.md in GitHub](https://github.com/eularix/ciph/blob/main/CONTRIBUTING.md)
+- [Release History](https://github.com/eularix/ciph/releases)

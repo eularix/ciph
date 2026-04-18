@@ -6,6 +6,12 @@ const inter = Inter({
   subsets: ['latin'],
 });
 
+export const metadata = {
+  metadataBase: new URL('https://ciph.sh'),
+  title: 'Ciph',
+  description: 'Transparent HTTP encryption for frontend-backend communication.',
+};
+
 export default function Layout({ children }: LayoutProps<'/'>) {
   return (
     <html lang="en" className={inter.className} suppressHydrationWarning>

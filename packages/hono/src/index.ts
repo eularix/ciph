@@ -5,6 +5,35 @@ import { autoInitEmitter, startDevtools, getCiphInspectorApp } from "./devtools"
 
 export { getCiphInspectorApp }
 
+// ─── Public key endpoint helper ────────────────────────────────────────────
+/**
+ * Serves the server's public key at GET /ciph-public-key.
+ * Used by v2 clients to obtain the server public key for ECDH key exchange.
+ * Always unprotected — the public key is meant to be public.
+ *
+ * Setup (recommended - use with key generation CLI):
+ * ```ts
+ * // 1. Run: npx ciph generate-keys
+ * // 2. Get both CIPH_PRIVATE_KEY and VITE_CIPH_SERVER_PUBLIC_KEY from output
+ * // 3. In your Hono app:
+ *
+ * const publicKey = process.env.VITE_CIPH_SERVER_PUBLIC_KEY
+ * app.get("/ciph-public-key", ciphPublicKeyEndpoint(publicKey))
+ * app.use("*", ciph({ privateKey: process.env.CIPH_PRIVATE_KEY }))
+ * ```
+ */
+export function ciphPublicKeyEndpoint(publicKey: string): MiddlewareHandler {
+  if (!publicKey || publicKey.trim().length === 0) {
+    throw new Error(
+      "[ciph] ciphPublicKeyEndpoint requires a non-empty publicKey. " +
+        "Run 'npx ciph generate-keys' to generate both keys, then provide VITE_CIPH_SERVER_PUBLIC_KEY."
+    )
+  }
+  return async (c: Context): Promise<Response> => {
+    return c.json({ publicKey }, 200)
+  }
+}
+
 const CIPH_EXCLUDE_KEY = "ciph.exclude.route"
 
 export interface CiphHonoConfig {
@@ -366,7 +395,7 @@ async function handleV2(
     const rawShared = await core.deriveECDHBits(privateKey, clientPublicKey)
     sessionKey = await core.deriveSessionKey(rawShared)
     state.ecdhSessionKeyDerived = true
-  } catch {
+  } catch (error) {
     state.errorCode = "CIPH007"
     state.status = 401
     emitDevLog(c, state)
@@ -386,7 +415,7 @@ async function handleV2(
   try {
     const decrypted = await core.decrypt(encryptedFp, sessionKey)
     fpComponents = JSON.parse(decrypted.plaintext) as Record<string, string>
-  } catch {
+  } catch (error) {
     state.errorCode = "CIPH002"
     state.status = 401
     emitDevLog(c, state)

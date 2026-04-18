@@ -1,9 +1,16 @@
 import { AxiosRequestConfig } from 'axios';
 import { FingerprintOptions } from '@ciph/core';
 
+/**
+ * v1 (symmetric) — shared secret, deprecated in favor of v2
+ * v2 (ECDH asymmetric) — server public key + client ephemeral key pair
+ */
 interface CiphClientConfig {
     baseURL: string;
-    secret: string;
+    serverPublicKey?: string;
+    publicKeyEndpoint?: string;
+    /** @deprecated Use v2 config (serverPublicKey or publicKeyEndpoint) instead */
+    secret?: string;
     fingerprintOptions?: FingerprintOptions;
     onFingerprintMismatch?: "retry" | "throw" | "ignore";
     fallbackToPlain?: boolean;

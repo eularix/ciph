@@ -1,17 +1,23 @@
 import { Hono } from 'hono'
 import { cors } from 'hono/cors'
-import { ciph } from '@ciph/hono'
+import { ciph, ciphPublicKeyEndpoint } from '@ciph/hono'
 
 const app = new Hono()
 
 // CORS — allow frontend dev origin
 app.use('/*', cors({
-  origin: ['http://localhost:5173', 'http://localhost:4173'],
+  origin: ['http://localhost:5173', 'http://localhost:5174', 'http://localhost:4173'],
   allowMethods: ['GET', 'POST', 'PUT', 'PATCH', 'DELETE', 'OPTIONS'],
   allowHeaders: ['Content-Type', 'X-Client-PublicKey', 'X-Fingerprint'],
   exposeHeaders: [],
   credentials: false,
 }))
+
+// v2 ECDH public key endpoint — clients fetch this on first request
+// When VITE_CIPH_SERVER_PUBLIC_KEY is set in frontend env, this endpoint is not needed
+// Set in .env as VITE_CIPH_SERVER_PUBLIC_KEY (from key generation output)
+const serverPublicKey = process.env.VITE_CIPH_SERVER_PUBLIC_KEY!
+app.get('/ciph-public-key', ciphPublicKeyEndpoint(serverPublicKey))
 
 // v2 ECDH — uses privateKey from env (no shared secret on frontend)
 // Devtools inspector auto-starts at http://localhost:4321 in development
