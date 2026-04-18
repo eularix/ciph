@@ -1,19 +1,16 @@
 ---
-title: "Svelte"
-description: "Ciph client integration for Svelte applications (Coming Soon)"
+title: "Svelte (Soon)"
 ---
 
-# Svelte (Coming Soon)
-
-Svelte support for `@ciph/react` is coming in a future release.
+Svelte support for `@ciph/svelte` is coming in a future release.
 
 For now, you can:
-- Use `@ciph/react` directly in Svelte (axios-compatible)
+- Use `@ciph/svelte` directly in Svelte (axios-compatible)
 - Set up in a store module:
 
 ```typescript
 // lib/ciph.ts
-import { createClient } from '@ciph/react'
+import { createClient } from '@ciph/svelte'
 
 export const ciph = createClient({
   baseURL: import.meta.env.VITE_API_URL,

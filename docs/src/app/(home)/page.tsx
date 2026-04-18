@@ -13,18 +13,14 @@ export default function HomePage() {
   }
 
   return (
-    <div style={{ minHeight: '100vh', display: 'flex', flexDirection: 'column', background: '#07090e', color: '#e6edf3' }}>
+    <div style={{ minHeight: '100vh', display: 'flex', flexDirection: 'column', color: '#e6edf3', position: 'relative', zIndex: 1 }}>
       <style>{`
-        @import url('https://fonts.googleapis.com/css2?family=Syne:wght@700;800&display=swap');
-        
-        body, html { background: #07090e; }
-        
         .hp-btn { border-radius: 8px; font-weight: 600; cursor: pointer; transition: all 0.15s; border: none; font-family: inherit; }
         .hp-btn-primary { background: #4f8ef7; color: white; padding: 11px 20px; font-size: 14px; }
         .hp-btn-primary:hover { background: #6ba3ff; }
         .hp-btn-ghost { background: transparent; border: 1px solid rgba(255,255,255,0.1); color: #e6edf3; padding: 10px 20px; font-size: 14px; }
         .hp-btn-ghost:hover { background: rgba(255,255,255,0.05); border-color: rgba(255,255,255,0.2); }
-        
+
         .hp-copy-btn { background: rgba(255,255,255,0.06); border: 1px solid rgba(255,255,255,0.1); color: #8b949e; font-size: 12px; padding: 4px 8px; border-radius: 4px; cursor: pointer; transition: all 0.15s; font-family: inherit; }
         .hp-copy-btn:hover { background: rgba(255,255,255,0.1); color: #e6edf3; }
       `}</style>
@@ -38,7 +34,7 @@ export default function HomePage() {
           </div>
           
           {/* Hero */}
-          <h1 style={{ fontSize: 56, fontWeight: 800, margin: '0 0 20px 0', letterSpacing: '-0.03em', fontFamily: "'Syne', sans-serif", lineHeight: 1.1 }}>
+          <h1 style={{ fontSize: 56, fontWeight: 800, margin: '0 0 20px 0', letterSpacing: '-0.03em', lineHeight: 1.1 }}>
             Encrypt the Wire
           </h1>
           

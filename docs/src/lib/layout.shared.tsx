@@ -9,35 +9,26 @@ const NavLogo = () => (
       alt="Ciph"
       width={64}
       height={24}
-      className="hidden dark:block"
-      priority
-    />
-    <Image
-      src="/logo-black.svg"
-      alt="Ciph"
-      width={64}
-      height={24}
-      className="block dark:hidden"
       priority
     />
   </span>
 );
 
-// Navbar config for docs pages (minimal, no extra links)
 export function docsOptions(): BaseLayoutProps {
   return {
     nav: {
       title: <NavLogo />,
+      transparentMode: 'always',
     },
     githubUrl: `https://github.com/${gitConfig.user}/${gitConfig.repo}`,
   };
 }
 
-// Navbar config for home & generate-key pages (full nav)
 export function pageOptions(): BaseLayoutProps {
   return {
     nav: {
       title: <NavLogo />,
+      transparentMode: 'always',
     },
     links: [
       {
@@ -54,7 +45,6 @@ export function pageOptions(): BaseLayoutProps {
   };
 }
 
-// Legacy export for backward compatibility
 export function baseOptions(): BaseLayoutProps {
   return docsOptions();
 }
