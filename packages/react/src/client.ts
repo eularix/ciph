@@ -1,3 +1,4 @@
+// Ciph React client - transparent HTTP encryption
 import axios, {
   type AxiosError,
   type AxiosInstance,
