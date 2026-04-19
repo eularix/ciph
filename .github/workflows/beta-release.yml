@@ -94,10 +94,9 @@ jobs:
       - name: Publish beta packages
         env:
           CHANGED_PACKAGES: ${{ needs.detect-and-bump.outputs.changed-packages }}
-          NODE_AUTH_TOKEN: ${{ secrets.NPM_TOKEN }}
         run: |
           # Create .npmrc with auth token for bun publish
-          echo "//registry.npmjs.org/:_authToken=${NODE_AUTH_TOKEN}" > ~/.npmrc
+          echo "//registry.npmjs.org/:_authToken=${{ secrets.NPM_TOKEN }}" > ~/.npmrc
           chmod 600 ~/.npmrc
           
           IFS=',' read -ra PKGS <<< "$CHANGED_PACKAGES"

@@ -404,20 +404,20 @@ var import_react2 = require("react");
 var import_react = require("react");
 var import_jsx_runtime = require("react/jsx-runtime");
 function statusColor(status) {
-  if (status >= 500) return "#f85149";
-  if (status >= 400) return "#d29922";
-  if (status >= 200) return "#3fb950";
-  return "#8b949e";
+  if (status >= 500) return "#f87171";
+  if (status >= 400) return "#fb923c";
+  if (status >= 200) return "#4ade80";
+  return "#a1a5b7";
 }
 function methodColor(method) {
   const m = {
-    GET: { bg: "#0d1b2e", text: "#58a6ff" },
-    POST: { bg: "#0d2010", text: "#3fb950" },
-    PUT: { bg: "#1e1500", text: "#d29922" },
-    PATCH: { bg: "#1a0d2e", text: "#bc8cff" },
-    DELETE: { bg: "#2e0d0d", text: "#f85149" }
+    GET: { bg: "rgba(96,165,250,0.15)", text: "#60a5fa" },
+    POST: { bg: "rgba(74,222,128,0.15)", text: "#4ade80" },
+    PUT: { bg: "rgba(251,146,60,0.15)", text: "#fb923c" },
+    PATCH: { bg: "rgba(216,180,254,0.15)", text: "#d8b4fe" },
+    DELETE: { bg: "rgba(248,113,113,0.15)", text: "#f87171" }
   };
-  return m[method] ?? { bg: "#1c2230", text: "#8b949e" };
+  return m[method] ?? { bg: "rgba(156,164,200,0.1)", text: "#a1a5b7" };
 }
 function fmtBody(v) {
   if (v === null || v === void 0) return "\u2014";
@@ -561,12 +561,14 @@ function DevtoolsPanel({
   }, [maxLogs]);
   const sel = (selected !== null ? entries[selected] : null) ?? null;
   const colors = {
-    bg: "#0f1117",
-    bg2: "#161b22",
-    bg3: "#1c2230",
-    border: "#30363d",
-    text: "#e6edf3",
-    text2: "#8b949e"
+    bg: "#0a0e27",
+    bg2: "#0f1423",
+    bg3: "#151b3a",
+    bg4: "#1a1f4f",
+    border: "#2d3e7a",
+    border2: "#1a2555",
+    text: "#f0f4ff",
+    text2: "#9ca4c8"
   };
   const toggleBtnStyle = liveDragXY ? { position: "fixed", left: liveDragXY.x, top: liveDragXY.y, zIndex: 1000001, cursor: "grabbing" } : btnSnap ? btnStyleFromSnap(btnSnap) : defaultBtnStyle(position);
   return /* @__PURE__ */ (0, import_jsx_runtime.jsxs)(import_jsx_runtime.Fragment, { children: [
@@ -577,13 +579,13 @@ function DevtoolsPanel({
       ...position === "left" ? { top: 0, bottom: 0, left: 0, width: panelSize } : {},
       ...position === "right" ? { top: 0, bottom: 0, right: 0, width: panelSize } : {},
       zIndex: 999998,
-      boxShadow: "0 0 40px rgba(0,0,0,0.6)",
+      boxShadow: "0 0 32px rgba(0,0,0,0.4)",
       background: colors.bg,
       display: "flex",
       flexDirection: "column",
       overflow: "hidden",
-      fontFamily: "'Menlo','Monaco','Consolas',monospace",
-      fontSize: 12,
+      fontFamily: "-apple-system,BlinkMacSystemFont,'Segoe UI','Roboto','Oxygen','Ubuntu','Cantarell','Fira Sans','Droid Sans','Helvetica Neue',sans-serif",
+      fontSize: 13,
       color: colors.text,
       borderTop: position === "bottom" ? `1px solid ${colors.border}` : void 0,
       borderBottom: position === "top" ? `1px solid ${colors.border}` : void 0,
@@ -632,13 +634,13 @@ function DevtoolsPanel({
       ...floatingPanelStyle(btnSnap, position),
       background: colors.bg,
       border: `1px solid ${colors.border}`,
-      borderRadius: 10,
-      boxShadow: "0 8px 32px rgba(0,0,0,0.5)",
+      borderRadius: 12,
+      boxShadow: "0 16px 48px rgba(0,0,0,0.5)",
       display: "flex",
       flexDirection: "column",
       overflow: "hidden",
-      fontFamily: "'Menlo','Monaco','Consolas',monospace",
-      fontSize: 12,
+      fontFamily: "-apple-system,BlinkMacSystemFont,'Segoe UI','Roboto','Oxygen','Ubuntu','Cantarell','Fira Sans','Droid Sans','Helvetica Neue',sans-serif",
+      fontSize: 13,
       color: colors.text
     }, children: /* @__PURE__ */ (0, import_jsx_runtime.jsx)(
       PanelContent,
@@ -670,15 +672,17 @@ function DevtoolsPanel({
         style: {
           ...toggleBtnStyle,
           padding: "8px 14px 8px 10px",
-          background: open ? "#161b22" : "#0d1117",
+          background: open ? "rgba(25, 25, 63, 0.8)" : "rgba(10, 14, 39, 0.8)",
+          backdropFilter: "blur(8px)",
           borderRadius: 9999,
-          border: "1px solid rgba(255,255,255,0.12)",
-          boxShadow: "0 4px 16px rgba(0,0,0,0.5)",
+          border: "1px solid rgba(99,102,241,0.3)",
+          boxShadow: "0 8px 24px rgba(0,0,0,0.4)",
           display: "flex",
           alignItems: "center",
           gap: 8,
           userSelect: "none",
-          cursor: liveDragXY ? "grabbing" : "grab"
+          cursor: liveDragXY ? "grabbing" : "grab",
+          transition: "all 0.2s ease"
         },
         title: "Drag to move \xB7 Click to toggle",
         children: [
@@ -688,7 +692,7 @@ function DevtoolsPanel({
             /* @__PURE__ */ (0, import_jsx_runtime.jsx)("path", { d: "M18.15 52.2C15.5167 52.2 13.0833 51.7667 10.85 50.9C8.65 50 6.73333 48.75 5.1 47.15C3.46667 45.5167 2.2 43.6 1.3 41.4C0.433333 39.1667 0 36.7167 0 34.05C0 31.45 0.466667 29.05 1.4 26.85C2.33333 24.65 3.61667 22.75 5.25 21.15C6.91667 19.5167 8.86667 18.25 11.1 17.35C13.3667 16.45 15.8333 16 18.5 16C20.1667 16 21.8 16.2167 23.4 16.65C25 17.0833 26.4833 17.7333 27.85 18.6C28.7261 19.1215 29.524 19.7083 30.2434 20.3604C30.9798 21.0277 30.9648 22.1551 30.3109 22.9034L27.6908 25.9014C26.917 26.7867 25.5578 26.8011 24.6204 26.0912C24.417 25.9372 24.2102 25.7902 24 25.65C23.2333 25.0833 22.3833 24.65 21.45 24.35C20.5167 24.05 19.5167 23.9 18.45 23.9C17.1167 23.9 15.85 24.15 14.65 24.65C13.4833 25.1167 12.45 25.8 11.55 26.7C10.6833 27.5667 10 28.6333 9.5 29.9C9 31.1667 8.75 32.5833 8.75 34.15C8.75 35.6833 9 37.0833 9.5 38.35C10 39.5833 10.7 40.65 11.6 41.55C12.5 42.45 13.5833 43.1333 14.85 43.6C16.15 44.0667 17.5833 44.3 19.15 44.3C20.2167 44.3 21.2333 44.15 22.2 43.85C23.1667 43.55 24.05 43.15 24.85 42.65C24.9287 42.5996 25.0066 42.5486 25.0835 42.497C26.1666 41.7711 27.7257 41.9212 28.4213 43.024L30.3459 46.0752C30.822 46.8299 30.7501 47.8232 30.058 48.3864C29.4121 48.9119 28.6594 49.3998 27.8 49.85C26.4333 50.5833 24.9 51.1667 23.2 51.6C21.5333 52 19.85 52.2 18.15 52.2Z", fill: "white" }),
             /* @__PURE__ */ (0, import_jsx_runtime.jsx)("path", { d: "M115.75 52C114.839 52 114.1 51.2613 114.1 50.35V17C114.1 15.8954 114.995 15 116.1 15H119.95C121.055 15 121.95 15.8954 121.95 17V30.4151C121.95 30.6767 121.788 30.9109 121.543 31.0027C121.055 31.1855 120.589 30.734 120.821 30.2681C121.191 29.5279 121.684 28.8385 122.3 28.2C123.267 27.2 124.417 26.4 125.75 25.8C127.083 25.2 128.483 24.9 129.95 24.9C131.95 24.9 133.633 25.3167 135 26.15C136.367 26.95 137.4 28.1667 138.1 29.8C138.8 31.4 139.15 33.3667 139.15 35.7V50C139.15 51.1046 138.255 52 137.15 52H133.1C131.995 52 131.1 51.1046 131.1 50V36.35C131.1 35.2833 130.95 34.4 130.65 33.7C130.35 33 129.883 32.4833 129.25 32.15C128.65 31.7833 127.9 31.6167 127 31.65C126.3 31.65 125.65 31.7667 125.05 32C124.45 32.2 123.933 32.5167 123.5 32.95C123.067 33.35 122.717 33.8167 122.45 34.35C122.217 34.8833 122.1 35.4667 122.1 36.1V50C122.1 51.1046 121.205 52 120.1 52H118.15C117.217 52 116.417 52 115.75 52Z", fill: "white" })
           ] }),
-          entries.length > 0 && /* @__PURE__ */ (0, import_jsx_runtime.jsx)("span", { style: { background: "rgba(88,166,255,0.15)", color: "#58a6ff", border: "1px solid rgba(88,166,255,0.3)", borderRadius: 9999, padding: "1px 7px", fontSize: 10, fontFamily: "monospace", fontWeight: 600 }, children: entries.length })
+          entries.length > 0 && /* @__PURE__ */ (0, import_jsx_runtime.jsx)("span", { style: { background: "rgba(99,102,241,0.2)", color: "#a78bfa", border: "1px solid rgba(167,139,250,0.3)", borderRadius: 9999, padding: "2px 8px", fontSize: 11, fontWeight: 600 }, children: entries.length })
         ]
       }
     )
@@ -696,20 +700,28 @@ function DevtoolsPanel({
 }
 function PanelContent({ colors, entries, selected, setSelected, sel, onClear, onClose, client, isRequesting, setIsRequesting }) {
   return /* @__PURE__ */ (0, import_jsx_runtime.jsxs)(import_jsx_runtime.Fragment, { children: [
-    /* @__PURE__ */ (0, import_jsx_runtime.jsxs)("div", { style: { background: colors.bg2, borderBottom: `1px solid ${colors.border}`, padding: "10px 14px", display: "flex", alignItems: "center", gap: 12, flexShrink: 0 }, children: [
-      /* @__PURE__ */ (0, import_jsx_runtime.jsx)("span", { style: { fontSize: 13, fontWeight: 700, letterSpacing: 0.5 }, children: "\u{1F6E1}\uFE0F Ciph Inspector" }),
-      /* @__PURE__ */ (0, import_jsx_runtime.jsxs)("span", { style: { fontSize: 10, background: colors.bg3, border: `1px solid ${colors.border}`, borderRadius: 10, padding: "2px 8px", color: colors.text2 }, children: [
+    /* @__PURE__ */ (0, import_jsx_runtime.jsxs)("div", { style: { background: `linear-gradient(135deg, ${colors.bg2} 0%, ${colors.bg3} 100%)`, borderBottom: `1px solid ${colors.border}`, padding: "14px 16px", display: "flex", alignItems: "center", gap: 12, flexShrink: 0 }, children: [
+      /* @__PURE__ */ (0, import_jsx_runtime.jsx)("span", { style: { fontSize: 14, fontWeight: 700, letterSpacing: "-0.5px", background: "linear-gradient(135deg, #60a5fa, #a78bfa)", WebkitBackgroundClip: "text", WebkitTextFillColor: "transparent", backgroundClip: "text" }, children: "\u{1F6E1}\uFE0F Ciph" }),
+      /* @__PURE__ */ (0, import_jsx_runtime.jsxs)("span", { style: { fontSize: 11, background: colors.bg3, border: `1px solid ${colors.border}`, borderRadius: 10, padding: "3px 8px", color: colors.text2, fontWeight: 500 }, children: [
         entries.length,
-        " request",
-        entries.length !== 1 ? "s" : ""
+        " ",
+        entries.length === 1 ? "request" : "requests"
       ] }),
-      /* @__PURE__ */ (0, import_jsx_runtime.jsx)("span", { style: { fontSize: 10, color: colors.text2, background: "#0d2010", border: "1px solid #3fb95033", borderRadius: 6, padding: "2px 6px" }, children: "client-only \u2726" }),
+      /* @__PURE__ */ (0, import_jsx_runtime.jsx)("span", { style: { fontSize: 10, color: colors.text2, background: "rgba(99,102,241,0.1)", border: `1px solid ${colors.border}`, borderRadius: 6, padding: "3px 7px", fontWeight: 500 }, children: "client" }),
       /* @__PURE__ */ (0, import_jsx_runtime.jsx)("div", { style: { flex: 1 } }),
       /* @__PURE__ */ (0, import_jsx_runtime.jsx)(
         "button",
         {
           onClick: onClear,
-          style: { padding: "3px 10px", borderRadius: 6, border: `1px solid ${colors.border}`, background: colors.bg3, color: colors.text2, cursor: "pointer", fontSize: 11, fontFamily: "inherit" },
+          style: { padding: "6px 12px", borderRadius: 8, border: `1px solid ${colors.border}`, background: colors.bg3, color: colors.text2, cursor: "pointer", fontSize: 12, fontFamily: "inherit", fontWeight: 500, transition: "all 0.2s ease" },
+          onMouseEnter: (e) => {
+            e.currentTarget.style.color = colors.text;
+            e.currentTarget.style.borderColor = "#6366f1";
+          },
+          onMouseLeave: (e) => {
+            e.currentTarget.style.color = colors.text2;
+            e.currentTarget.style.borderColor = colors.border;
+          },
           children: "Clear"
         }
       ),
@@ -717,23 +729,34 @@ function PanelContent({ colors, entries, selected, setSelected, sel, onClear, on
         "button",
         {
           onClick: onClose,
-          style: { padding: "3px 8px", borderRadius: 6, border: `1px solid ${colors.border}`, background: colors.bg3, color: colors.text2, cursor: "pointer", fontSize: 11, fontFamily: "inherit" },
+          style: { padding: "6px 10px", borderRadius: 8, border: `1px solid ${colors.border}`, background: colors.bg3, color: colors.text2, cursor: "pointer", fontSize: 12, fontFamily: "inherit", fontWeight: 500, transition: "all 0.2s ease" },
+          onMouseEnter: (e) => {
+            e.currentTarget.style.color = colors.text;
+            e.currentTarget.style.borderColor = "#f87171";
+          },
+          onMouseLeave: (e) => {
+            e.currentTarget.style.color = colors.text2;
+            e.currentTarget.style.borderColor = colors.border;
+          },
           children: "\u2715"
         }
       )
     ] }),
     /* @__PURE__ */ (0, import_jsx_runtime.jsxs)("div", { style: { display: "flex", flex: 1, overflow: "hidden" }, children: [
-      /* @__PURE__ */ (0, import_jsx_runtime.jsxs)("div", { style: { width: 300, borderRight: `1px solid ${colors.border}`, overflowY: "auto", flexShrink: 0 }, children: [
-        /* @__PURE__ */ (0, import_jsx_runtime.jsxs)("div", { style: { position: "sticky", top: 0, background: colors.bg2, borderBottom: `1px solid ${colors.border}`, padding: "6px 10px", display: "grid", gridTemplateColumns: "52px 1fr 44px 42px", gap: 6, color: colors.text2, fontSize: 10, textTransform: "uppercase", letterSpacing: 0.5 }, children: [
-          /* @__PURE__ */ (0, import_jsx_runtime.jsx)("span", { children: "Method" }),
-          /* @__PURE__ */ (0, import_jsx_runtime.jsx)("span", { children: "Route" }),
-          /* @__PURE__ */ (0, import_jsx_runtime.jsx)("span", { children: "Status" }),
-          /* @__PURE__ */ (0, import_jsx_runtime.jsx)("span", { children: "ms" })
+      /* @__PURE__ */ (0, import_jsx_runtime.jsxs)("div", { style: { width: "480px", borderRight: `1px solid ${colors.border}`, overflowY: "auto", flexShrink: 0 }, children: [
+        /* @__PURE__ */ (0, import_jsx_runtime.jsxs)("div", { style: { position: "sticky", top: 0, background: colors.bg2, borderBottom: `1px solid ${colors.border}`, padding: "8px 14px", display: "flex", alignItems: "center", gap: "12px", color: colors.text2, fontSize: "10px", textTransform: "uppercase", letterSpacing: "0.5px", fontWeight: 600 }, children: [
+          /* @__PURE__ */ (0, import_jsx_runtime.jsx)("span", { style: { minWidth: "60px" }, children: "Method" }),
+          /* @__PURE__ */ (0, import_jsx_runtime.jsx)("span", { style: { flex: 1, minWidth: "200px" }, children: "Route" }),
+          /* @__PURE__ */ (0, import_jsx_runtime.jsx)("span", { style: { minWidth: "50px", textAlign: "center" }, children: "Status" }),
+          /* @__PURE__ */ (0, import_jsx_runtime.jsx)("span", { style: { minWidth: "50px", textAlign: "right" }, children: "Time" })
         ] }),
-        entries.length === 0 && /* @__PURE__ */ (0, import_jsx_runtime.jsxs)("div", { style: { padding: 20, color: colors.text2, fontSize: 12, textAlign: "center" }, children: [
-          "No requests yet.",
-          /* @__PURE__ */ (0, import_jsx_runtime.jsx)("br", {}),
-          "Make an API call to see logs."
+        entries.length === 0 && /* @__PURE__ */ (0, import_jsx_runtime.jsxs)("div", { style: { padding: 24, color: colors.text2, fontSize: 13, textAlign: "center", display: "flex", flexDirection: "column", alignItems: "center", gap: 8 }, children: [
+          /* @__PURE__ */ (0, import_jsx_runtime.jsx)("div", { style: { opacity: 0.5, fontSize: 24 }, children: "\u25CB" }),
+          /* @__PURE__ */ (0, import_jsx_runtime.jsxs)("div", { children: [
+            "No requests yet.",
+            /* @__PURE__ */ (0, import_jsx_runtime.jsx)("br", {}),
+            /* @__PURE__ */ (0, import_jsx_runtime.jsx)("span", { style: { fontSize: 11, color: colors.text2, opacity: 0.7 }, children: "Make an API call to see logs" })
+          ] })
         ] }),
         entries.map((e, i) => {
           const mc = methodColor(e.log.method);
@@ -743,21 +766,27 @@ function PanelContent({ colors, entries, selected, setSelected, sel, onClear, on
             {
               onClick: () => setSelected(i),
               style: {
-                padding: "7px 10px",
-                display: "grid",
-                gridTemplateColumns: "52px 1fr 44px 42px",
-                gap: 6,
-                borderBottom: `1px solid ${colors.border}`,
-                borderLeft: `2px solid ${isSel ? "#58a6ff" : e.log.status >= 400 ? "#f85149" : "transparent"}`,
+                padding: "11px 14px",
+                display: "flex",
+                alignItems: "center",
+                gap: 12,
+                borderBottom: `1px solid ${colors.border2}`,
+                borderLeft: `3px solid ${isSel ? "#60a5fa" : e.log.status >= 400 ? e.log.status >= 500 ? "#f87171" : "#fb923c" : "transparent"}`,
                 cursor: "pointer",
-                background: isSel ? colors.bg3 : "transparent",
-                alignItems: "center"
+                background: isSel ? colors.bg4 : "transparent",
+                transition: "all 0.15s ease"
+              },
+              onMouseEnter: (e2) => {
+                if (!isSel) e2.currentTarget.style.background = colors.bg3;
+              },
+              onMouseLeave: (e2) => {
+                if (!isSel) e2.currentTarget.style.background = "transparent";
               },
               children: [
-                /* @__PURE__ */ (0, import_jsx_runtime.jsx)("span", { style: { fontSize: 9, fontWeight: 700, padding: "2px 4px", borderRadius: 4, background: mc.bg, color: mc.text, textAlign: "center" }, children: e.log.method }),
-                /* @__PURE__ */ (0, import_jsx_runtime.jsx)("span", { style: { overflow: "hidden", textOverflow: "ellipsis", whiteSpace: "nowrap", color: colors.text, fontSize: 11 }, children: e.log.route }),
-                /* @__PURE__ */ (0, import_jsx_runtime.jsx)("span", { style: { color: statusColor(e.log.status), fontWeight: 600, fontSize: 11 }, children: e.log.status || "\u2026" }),
-                /* @__PURE__ */ (0, import_jsx_runtime.jsxs)("span", { style: { color: colors.text2, fontSize: 10 }, children: [
+                /* @__PURE__ */ (0, import_jsx_runtime.jsx)("span", { style: { fontSize: 10, fontWeight: 700, padding: "3px 6px", borderRadius: 6, background: mc.bg, color: mc.text, textAlign: "center", minWidth: 60 }, children: e.log.method }),
+                /* @__PURE__ */ (0, import_jsx_runtime.jsx)("span", { style: { overflow: "hidden", textOverflow: "ellipsis", whiteSpace: "nowrap", color: colors.text, fontSize: 12, flex: 1, minWidth: 200 }, children: e.log.route }),
+                /* @__PURE__ */ (0, import_jsx_runtime.jsx)("span", { style: { color: statusColor(e.log.status), fontWeight: 600, fontSize: 12, textAlign: "center", minWidth: 50 }, children: e.log.status || "\u2026" }),
+                /* @__PURE__ */ (0, import_jsx_runtime.jsxs)("span", { style: { color: colors.text2, fontSize: 12, textAlign: "right", minWidth: 50 }, children: [
                   e.log.duration,
                   "ms"
                 ] })
