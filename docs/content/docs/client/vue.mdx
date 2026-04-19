@@ -1,48 +1,112 @@
 ---
-title: "Vue (Soon)"
+title: "Vue"
 ---
 
-Vue.js support for `@ciph/vue` is coming in a future release.
+Use the `@ciph/vue` package in your Vue 3 applications for transparent HTTP encryption.
 
-For now, you can:
-- Use `@ciph/vue` directly in Vue (axios-compatible)
-- Set up in a composable:
+## Installation
 
-```typescript
-// composables/useCiph.ts
-import { createClient } from '@ciph/vue'
-
-const ciph = createClient({
-  baseURL: import.meta.env.VITE_API_URL,
-  secret: import.meta.env.VITE_CIPH_SECRET,
-})
-
-export function useCiph() {
-  return ciph
-}
+```bash
+pnpm add @ciph/vue @ciph/core
 ```
 
+## Setup
+
+Register the plugin once in `main.ts`:
+
+```typescript
+// main.ts
+import { createApp } from 'vue'
+import App from './App.vue'
+import { CiphPlugin } from '@ciph/vue'
+
+const app = createApp(App)
+
+app.use(CiphPlugin, {
+  baseURL: import.meta.env.VITE_API_URL,
+  serverPublicKey: import.meta.env.VITE_CIPH_SERVER_PUBLIC_KEY,
+})
+
+app.mount('#app')
+```
+
+## Usage in Components
+
 ```vue
-<script setup>
+<script setup lang="ts">
 import { ref, onMounted } from 'vue'
-import { useCiph } from '@/composables/useCiph'
+import { useCiph } from '@ciph/vue'
 
 const ciph = useCiph()
 const users = ref([])
+const loading = ref(true)
 
 onMounted(async () => {
   const res = await ciph.get('/api/users')
   users.value = res.data
+  loading.value = false
 })
 </script>
 
 <template>
-  <ul>
+  <div v-if="loading">Loading...</div>
+  <ul v-else>
     <li v-for="user in users" :key="user.id">{{ user.name }}</li>
   </ul>
 </template>
 ```
 
-**Status**: Enhanced Vue integration planned for a future release.
+## Creating Data
 
-Contributions welcome!
+```typescript
+const ciph = useCiph()
+
+async function createUser(name: string) {
+  const response = await ciph.post('/api/users', { name })
+  // response.data is automatically decrypted
+  return response.data
+}
+```
+
+## Updating Data
+
+```typescript
+async function updateUser(id: string, updates: Partial<User>) {
+  await ciph.patch(`/api/users/${id}`, updates)
+}
+```
+
+## Error Handling
+
+```typescript
+try {
+  const data = await ciph.post('/api/login', credentials)
+} catch (error) {
+  // CIPH003: Device changed (auto-retried, rare)
+  // CIPH002: Wrong key (config error)
+  // CIPH004: Corrupted response
+  if (error.response?.status === 401) {
+    console.error('Unauthorized:', error.response.data.code)
+  }
+}
+```
+
+## DevTools
+
+In development, the floating DevTools panel is shown automatically. Configure it via plugin options:
+
+```typescript
+app.use(CiphPlugin, {
+  baseURL: import.meta.env.VITE_API_URL,
+  serverPublicKey: import.meta.env.VITE_CIPH_SERVER_PUBLIC_KEY,
+  devtools: {
+    defaultOpen: true,
+    position: 'bottom-right', // 'bottom-right' | 'bottom-left' | 'top-right' | 'top-left' | 'bottom' | 'top' | 'left' | 'right'
+    maxLogs: 500,
+  },
+})
+```
+
+Pass `devtools: false` to disable entirely. The panel is always disabled in production — zero bytes added to the bundle.
+
+Drag the panel button to snap it to any screen edge. Click a request row to inspect plaintext and encrypted bodies side-by-side.
