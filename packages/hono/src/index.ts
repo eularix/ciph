@@ -2,8 +2,10 @@ import * as core from "@ciph/core"
 import type { CiphErrorCode, CiphServerLog } from "@ciph/core"
 import type { Context, MiddlewareHandler, Next } from "hono"
 import { autoInitEmitter, initDevtools, getCiphInspectorApp } from "./devtools"
+import type { CiphDevtoolsConfig } from "./devtools"
 
-export { getCiphInspectorApp }
+export { getCiphInspectorApp, autoInitEmitter, initDevtools }
+export type { CiphDevtoolsConfig }
 
 // ─── Public key endpoint helper ────────────────────────────────────────────
 /**
@@ -190,7 +192,16 @@ function buildLog(c: Context, state: RequestState): CiphServerLog {
 
 function emitDevLog(c: Context, state: RequestState): void {
   if (process.env.NODE_ENV === "production") return
-  getCiphServerEmitter()?.emit("log", buildLog(c, state))
+  
+  // Skip logging internal devtools requests to avoid loops
+  const path = c.req.path
+  if (path === "/ciph-devtools" || path.startsWith("/ciph-devtools/")) {
+    return
+  }
+  
+  const log = buildLog(c, state)
+  console.log(`[Ciph] Log emitted: ${c.req.method} ${c.req.path} → ${state.errorCode ?? 'OK'}`)
+  getCiphServerEmitter()?.emit("log", log)
 }
 
 // ─── Wire format helper ─────────────────────────────────────────────────────────────────

@@ -30,10 +30,12 @@ var __toCommonJS = (mod) => __copyProps(__defProp({}, "__esModule", { value: tru
 // src/index.ts
 var index_exports = {};
 __export(index_exports, {
+  autoInitEmitter: () => autoInitEmitter,
   ciph: () => ciph,
   ciphExclude: () => ciphExclude,
   ciphPublicKeyEndpoint: () => ciphPublicKeyEndpoint,
-  getCiphInspectorApp: () => getCiphInspectorApp
+  getCiphInspectorApp: () => getCiphInspectorApp,
+  initDevtools: () => initDevtools
 });
 module.exports = __toCommonJS(index_exports);
 var core = __toESM(require("@ciph/core"));
@@ -41,8 +43,35 @@ var core = __toESM(require("@ciph/core"));
 // src/devtools.ts
 var import_hono = require("hono");
 var _logs = [];
-var MAX_LOGS = 500;
+var _maxLogs = 500;
 var _bufferSubscribed = false;
+var _devtoolsConfig = { temporary: true, logFilePath: ".ciph-logs.jsonl" };
+async function writeLogToFile(log) {
+  if (_devtoolsConfig.temporary !== false || typeof global === "undefined") return;
+  try {
+    if (typeof require !== "undefined") {
+      const fs = require("fs");
+      const path = require("path");
+      const logPath = path.resolve(_devtoolsConfig.logFilePath || ".ciph-logs.jsonl");
+      const line = JSON.stringify(log) + "\n";
+      fs.appendFileSync(logPath, line);
+      return;
+    }
+  } catch (e) {
+  }
+}
+function clearLogFile() {
+  if (_devtoolsConfig.temporary !== false || typeof global === "undefined") return;
+  try {
+    if (typeof require !== "undefined") {
+      const fs = require("fs");
+      const path = require("path");
+      const logPath = path.resolve(_devtoolsConfig.logFilePath || ".ciph-logs.jsonl");
+      if (fs.existsSync(logPath)) fs.unlinkSync(logPath);
+    }
+  } catch (e) {
+  }
+}
 function autoInitEmitter() {
   if (globalThis.ciphServerEmitter) return;
   const listeners = [];
@@ -61,12 +90,22 @@ function autoInitEmitter() {
     }
   };
 }
-function initDevtools() {
+function initDevtools(config) {
   if (_bufferSubscribed) return;
   _bufferSubscribed = true;
+  if (config) {
+    _devtoolsConfig = { ...{ temporary: true, logFilePath: ".ciph-logs.jsonl" }, ...config };
+  }
+  if (config?.maxInMemoryLogs) {
+    _maxLogs = config.maxInMemoryLogs;
+  }
   globalThis.ciphServerEmitter?.on("log", (log) => {
     _logs.unshift(log);
-    if (_logs.length > MAX_LOGS) _logs.pop();
+    if (_logs.length > _maxLogs) _logs.pop();
+    if (_devtoolsConfig.temporary === false) {
+      writeLogToFile(log).catch(() => {
+      });
+    }
   });
 }
 function buildInspectorHtml(streamUrl, logsUrl) {
@@ -166,7 +205,7 @@ function buildInspectorHtml(streamUrl, logsUrl) {
   function showEmpty(){
     var d=document.getElementById('detail');
     d.replaceChildren();
-    d.appendChild(ap(mk('div','empty'),'\u2190 Select a request to inspect'));
+    d.appendChild(mk('div','empty','\u2190 Select a request to inspect'));
   }
 
   function render(){
@@ -326,6 +365,7 @@ function getCiphInspectorApp() {
   });
   app.delete("/logs", (c) => {
     _logs.length = 0;
+    clearLogFile();
     return c.json({ ok: true });
   });
   return app;
@@ -413,7 +453,13 @@ function buildLog(c, state) {
 }
 function emitDevLog(c, state) {
   if (process.env.NODE_ENV === "production") return;
-  getCiphServerEmitter()?.emit("log", buildLog(c, state));
+  const path = c.req.path;
+  if (path === "/ciph-devtools" || path.startsWith("/ciph-devtools/")) {
+    return;
+  }
+  const log = buildLog(c, state);
+  console.log(`[Ciph] Log emitted: ${c.req.method} ${c.req.path} \u2192 ${state.errorCode ?? "OK"}`);
+  getCiphServerEmitter()?.emit("log", log);
 }
 function buildWireResponse(ciphertext, origResponse) {
   const body = JSON.stringify({ status: "encrypted", data: ciphertext });
@@ -710,9 +756,11 @@ function ciph(config) {
 }
 // Annotate the CommonJS export names for ESM import in node:
 0 && (module.exports = {
+  autoInitEmitter,
   ciph,
   ciphExclude,
   ciphPublicKeyEndpoint,
-  getCiphInspectorApp
+  getCiphInspectorApp,
+  initDevtools
 });
 //# sourceMappingURL=index.js.map

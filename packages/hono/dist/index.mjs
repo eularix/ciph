@@ -1,11 +1,45 @@
+var __require = /* @__PURE__ */ ((x) => typeof require !== "undefined" ? require : typeof Proxy !== "undefined" ? new Proxy(x, {
+  get: (a, b) => (typeof require !== "undefined" ? require : a)[b]
+}) : x)(function(x) {
+  if (typeof require !== "undefined") return require.apply(this, arguments);
+  throw Error('Dynamic require of "' + x + '" is not supported');
+});
+
 // src/index.ts
 import * as core from "@ciph/core";
 
 // src/devtools.ts
 import { Hono } from "hono";
 var _logs = [];
-var MAX_LOGS = 500;
+var _maxLogs = 500;
 var _bufferSubscribed = false;
+var _devtoolsConfig = { temporary: true, logFilePath: ".ciph-logs.jsonl" };
+async function writeLogToFile(log) {
+  if (_devtoolsConfig.temporary !== false || typeof global === "undefined") return;
+  try {
+    if (typeof __require !== "undefined") {
+      const fs = __require("fs");
+      const path = __require("path");
+      const logPath = path.resolve(_devtoolsConfig.logFilePath || ".ciph-logs.jsonl");
+      const line = JSON.stringify(log) + "\n";
+      fs.appendFileSync(logPath, line);
+      return;
+    }
+  } catch (e) {
+  }
+}
+function clearLogFile() {
+  if (_devtoolsConfig.temporary !== false || typeof global === "undefined") return;
+  try {
+    if (typeof __require !== "undefined") {
+      const fs = __require("fs");
+      const path = __require("path");
+      const logPath = path.resolve(_devtoolsConfig.logFilePath || ".ciph-logs.jsonl");
+      if (fs.existsSync(logPath)) fs.unlinkSync(logPath);
+    }
+  } catch (e) {
+  }
+}
 function autoInitEmitter() {
   if (globalThis.ciphServerEmitter) return;
   const listeners = [];
@@ -24,12 +58,22 @@ function autoInitEmitter() {
     }
   };
 }
-function initDevtools() {
+function initDevtools(config) {
   if (_bufferSubscribed) return;
   _bufferSubscribed = true;
+  if (config) {
+    _devtoolsConfig = { ...{ temporary: true, logFilePath: ".ciph-logs.jsonl" }, ...config };
+  }
+  if (config?.maxInMemoryLogs) {
+    _maxLogs = config.maxInMemoryLogs;
+  }
   globalThis.ciphServerEmitter?.on("log", (log) => {
     _logs.unshift(log);
-    if (_logs.length > MAX_LOGS) _logs.pop();
+    if (_logs.length > _maxLogs) _logs.pop();
+    if (_devtoolsConfig.temporary === false) {
+      writeLogToFile(log).catch(() => {
+      });
+    }
   });
 }
 function buildInspectorHtml(streamUrl, logsUrl) {
@@ -129,7 +173,7 @@ function buildInspectorHtml(streamUrl, logsUrl) {
   function showEmpty(){
     var d=document.getElementById('detail');
     d.replaceChildren();
-    d.appendChild(ap(mk('div','empty'),'\u2190 Select a request to inspect'));
+    d.appendChild(mk('div','empty','\u2190 Select a request to inspect'));
   }
 
   function render(){
@@ -289,6 +333,7 @@ function getCiphInspectorApp() {
   });
   app.delete("/logs", (c) => {
     _logs.length = 0;
+    clearLogFile();
     return c.json({ ok: true });
   });
   return app;
@@ -376,7 +421,13 @@ function buildLog(c, state) {
 }
 function emitDevLog(c, state) {
   if (process.env.NODE_ENV === "production") return;
-  getCiphServerEmitter()?.emit("log", buildLog(c, state));
+  const path = c.req.path;
+  if (path === "/ciph-devtools" || path.startsWith("/ciph-devtools/")) {
+    return;
+  }
+  const log = buildLog(c, state);
+  console.log(`[Ciph] Log emitted: ${c.req.method} ${c.req.path} \u2192 ${state.errorCode ?? "OK"}`);
+  getCiphServerEmitter()?.emit("log", log);
 }
 function buildWireResponse(ciphertext, origResponse) {
   const body = JSON.stringify({ status: "encrypted", data: ciphertext });
@@ -672,9 +723,11 @@ function ciph(config) {
   };
 }
 export {
+  autoInitEmitter,
   ciph,
   ciphExclude,
   ciphPublicKeyEndpoint,
-  getCiphInspectorApp
+  getCiphInspectorApp,
+  initDevtools
 };
 //# sourceMappingURL=index.mjs.map

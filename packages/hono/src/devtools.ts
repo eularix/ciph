@@ -14,11 +14,70 @@ declare global {
   var ciphServerEmitter: CiphHonoEmitter | undefined
 }
 
-// ─── Log buffer ────────────────────────────────────────────────────────────────
+// ─── DevTools Config ──────────────────────────────────────────────────────────
+
+export interface CiphDevtoolsConfig {
+  /**
+   * If true (default), keep logs only in memory (_logs array / circular buffer).
+   * If false, also persist logs to disk as JSONL (JSON Lines format).
+   * File-based logging requires Node.js runtime.
+   */
+  temporary?: boolean
+
+  /**
+   * Path to log file (JSONL format). Only used if temporary === false.
+   * Default: ".ciph-logs.jsonl"
+   * Relative to process.cwd() in Node.js.
+   */
+  logFilePath?: string
+
+  /**
+   * Max in-memory buffer size (circular). Default: 500
+   */
+  maxInMemoryLogs?: number
+}
+
+// ─── Log buffer ────────────────────────────────────────────────────────────
 
 const _logs: CiphServerLog[] = []
-const MAX_LOGS = 500
+let _maxLogs = 500
 let _bufferSubscribed = false
+let _devtoolsConfig: CiphDevtoolsConfig = { temporary: true, logFilePath: ".ciph-logs.jsonl" }
+
+// Write log to file (Node.js only, gracefully skips on other runtimes)
+async function writeLogToFile(log: CiphServerLog): Promise<void> {
+  if (_devtoolsConfig.temporary !== false || typeof global === "undefined") return
+
+  try {
+    // Node.js runtime
+    if (typeof require !== "undefined") {
+      const fs = require("fs")
+      const path = require("path")
+      const logPath = path.resolve(_devtoolsConfig.logFilePath || ".ciph-logs.jsonl")
+      const line = JSON.stringify(log) + "\n"
+      fs.appendFileSync(logPath, line)
+      return
+    }
+  } catch (e) {
+    // Silently fail in dev — file I/O not available
+  }
+}
+
+// Clear log file (Node.js only)
+function clearLogFile(): void {
+  if (_devtoolsConfig.temporary !== false || typeof global === "undefined") return
+
+  try {
+    if (typeof require !== "undefined") {
+      const fs = require("fs")
+      const path = require("path")
+      const logPath = path.resolve(_devtoolsConfig.logFilePath || ".ciph-logs.jsonl")
+      if (fs.existsSync(logPath)) fs.unlinkSync(logPath)
+    }
+  } catch (e) {
+    // Silently fail
+  }
+}
 
 export function autoInitEmitter(): void {
   if (globalThis.ciphServerEmitter) return
@@ -42,12 +101,29 @@ export function autoInitEmitter(): void {
 // Subscribe the in-memory log buffer to the emitter.
 // Called once after autoInitEmitter() so the buffer accumulates logs
 // even before any browser connects to /ciph-devtools/stream.
-export function initDevtools(): void {
+export function initDevtools(config?: CiphDevtoolsConfig): void {
   if (_bufferSubscribed) return
   _bufferSubscribed = true
+
+  // Merge config
+  if (config) {
+    _devtoolsConfig = { ...{ temporary: true, logFilePath: ".ciph-logs.jsonl" }, ...config }
+  }
+
+  // Apply max logs setting
+  if (config?.maxInMemoryLogs) {
+    _maxLogs = config.maxInMemoryLogs
+  }
+
   globalThis.ciphServerEmitter?.on("log", (log) => {
+    // Add to in-memory circular buffer
     _logs.unshift(log)
-    if (_logs.length > MAX_LOGS) _logs.pop()
+    if (_logs.length > _maxLogs) _logs.pop()
+
+    // Write to disk if persistent mode
+    if (_devtoolsConfig.temporary === false) {
+      writeLogToFile(log).catch(() => { /* silently fail */ })
+    }
   })
 }
 
@@ -150,7 +226,7 @@ function buildInspectorHtml(streamUrl: string, logsUrl: string): string {
   function showEmpty(){
     var d=document.getElementById('detail');
     d.replaceChildren();
-    d.appendChild(ap(mk('div','empty'),'← Select a request to inspect'));
+    d.appendChild(mk('div','empty','← Select a request to inspect'));
   }
 
   function render(){
@@ -330,6 +406,7 @@ export function getCiphInspectorApp() {
 
   app.delete("/logs", (c) => {
     _logs.length = 0
+    clearLogFile()
     return c.json({ ok: true })
   })
 
