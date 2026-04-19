@@ -64,7 +64,20 @@ function App() {
   }
 
   useEffect(() => {
-    fetchEmployees()
+    let cancelled = false
+    const load = async () => {
+      setEmpLoading(true)
+      setEmpError(null)
+      try {
+        const res = await ciph.get<{ data: Employee[]; total: number }>('/api/employees')
+        if (!cancelled) setEmployees(res.data.data)
+      } catch (error) {
+        if (!cancelled) setEmpError((error as Error).message || 'Failed to fetch employees')
+      }
+      if (!cancelled) setEmpLoading(false)
+    }
+    load()
+    return () => { cancelled = true }
   // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [])
 
