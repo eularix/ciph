@@ -14,6 +14,12 @@ declare global {
   var ciphServerEmitter: CiphHonoEmitter | undefined
 }
 
+// ─── Log buffer ────────────────────────────────────────────────────────────────
+
+const _logs: CiphServerLog[] = []
+const MAX_LOGS = 500
+let _bufferSubscribed = false
+
 export function autoInitEmitter(): void {
   if (globalThis.ciphServerEmitter) return
   const listeners: Array<(log: CiphServerLog) => void> = []
@@ -33,11 +39,21 @@ export function autoInitEmitter(): void {
   }
 }
 
+// Subscribe the in-memory log buffer to the emitter.
+// Called once after autoInitEmitter() so the buffer accumulates logs
+// even before any browser connects to /ciph-devtools/stream.
+export function initDevtools(): void {
+  if (_bufferSubscribed) return
+  _bufferSubscribed = true
+  globalThis.ciphServerEmitter?.on("log", (log) => {
+    _logs.unshift(log)
+    if (_logs.length > MAX_LOGS) _logs.pop()
+  })
+}
+
 // ─── Inspector HTML ────────────────────────────────────────────────────────────
 
-const BASE_PATH = "/ciph-devtools"
-
-function buildInspectorHtml(streamUrl: string): string {
+function buildInspectorHtml(streamUrl: string, logsUrl: string): string {
   return `<!DOCTYPE html>
 <html lang="en">
 <head>
@@ -117,7 +133,7 @@ function buildInspectorHtml(streamUrl: string): string {
 <script>
 (function(){
   var streamUrl='${streamUrl}';
-  var logsUrl='${BASE_PATH}/logs';
+  var logsUrl='${logsUrl}';
   var logs=[],sel=null;
 
   function mk(tag,cls,txt){
@@ -252,24 +268,6 @@ function buildInspectorHtml(streamUrl: string): string {
 </html>`
 }
 
-// ─── Log buffer (shared between standalone and sub-app) ────────────────────────
-
-let _started = false
-const _logs: CiphServerLog[] = []
-const MAX_LOGS = 500
-
-function subscribeBuffer(): void {
-  globalThis.ciphServerEmitter?.on("log", (log) => {
-    _logs.unshift(log)
-    if (_logs.length > MAX_LOGS) _logs.pop()
-  })
-}
-
-const corsHeaders = {
-  "access-control-allow-origin": "*",
-  "access-control-allow-methods": "GET, DELETE, OPTIONS",
-}
-
 // ─── SSE stream helper ─────────────────────────────────────────────────────────
 
 function makeSSEStream(signal: AbortSignal): ReadableStream<Uint8Array> {
@@ -299,152 +297,27 @@ const sseResponseHeaders = {
   "content-type": "text/event-stream; charset=utf-8",
   "cache-control": "no-cache",
   "connection": "keep-alive",
-  ...corsHeaders,
 }
 
-// ─── Bun-native standalone server ─────────────────────────────────────────────
-
-async function startBunDevtools(port: number): Promise<void> {
-  const bunGlobal = (globalThis as unknown) as {
-    Bun: { serve(opts: { port: number; fetch(req: Request): Response | Promise<Response> }): unknown }
-  }
-  const streamUrl = `http://localhost:${port}${BASE_PATH}/stream`
-  const html = buildInspectorHtml(streamUrl)
-
-  bunGlobal.Bun.serve({
-    port,
-    fetch(req: Request): Response | Promise<Response> {
-      const url = new URL(req.url)
-      const method = req.method
-
-      if (method === "OPTIONS") return new Response(null, { status: 204, headers: corsHeaders })
-
-      if (url.pathname === "/" && method === "GET") {
-        return new Response(html, { headers: { "content-type": "text/html; charset=utf-8" } })
-      }
-
-      if (url.pathname === `${BASE_PATH}/stream` && method === "GET") {
-        return new Response(makeSSEStream(req.signal), { headers: sseResponseHeaders })
-      }
-
-      if (url.pathname === `${BASE_PATH}/logs`) {
-        if (method === "GET") {
-          return Response.json({ logs: [..._logs], total: _logs.length })
-        }
-        if (method === "DELETE") {
-          _logs.length = 0
-          return Response.json({ ok: true })
-        }
-      }
-
-      return new Response(JSON.stringify({ message: "Not Found" }), {
-        status: 404,
-        headers: { "content-type": "application/json" },
-      })
-    },
-  })
-}
-
-// ─── Node-compatible standalone server ────────────────────────────────────────
-
-async function startNodeDevtools(port: number): Promise<void> {
-  const httpModule = await (import("node:http") as Promise<typeof import("node:http")>)
-
-  const server = httpModule.createServer((req, res) => {
-    const url = new URL(req.url ?? "/", `http://localhost:${port}`)
-    const method = req.method ?? "GET"
-
-    Object.entries(corsHeaders).forEach(([k, v]) => res.setHeader(k, v))
-    if (method === "OPTIONS") { res.writeHead(204); res.end(); return }
-
-    if (url.pathname === "/" && method === "GET") {
-      const streamUrl = `http://localhost:${port}${BASE_PATH}/stream`
-      res.writeHead(200, { "content-type": "text/html; charset=utf-8" })
-      res.end(buildInspectorHtml(streamUrl))
-      return
-    }
-
-    if (url.pathname === `${BASE_PATH}/stream` && method === "GET") {
-      res.writeHead(200, {
-        "content-type": "text/event-stream; charset=utf-8",
-        "cache-control": "no-cache",
-        "connection": "keep-alive",
-      })
-      res.flushHeaders?.()
-      res.write(": connected\n\n")
-
-      const send = (log: CiphServerLog) => {
-        try { res.write(`data: ${JSON.stringify(log)}\n\n`) } catch { /* client gone */ }
-      }
-      globalThis.ciphServerEmitter?.on("log", send)
-
-      const keepalive = setInterval(() => {
-        try { res.write(": ping\n\n") } catch { clearInterval(keepalive) }
-      }, 25000)
-
-      req.on("close", () => {
-        clearInterval(keepalive)
-        globalThis.ciphServerEmitter?.off("log", send)
-      })
-      return
-    }
-
-    if (url.pathname === `${BASE_PATH}/logs`) {
-      if (method === "GET") {
-        res.writeHead(200, { "content-type": "application/json" })
-        res.end(JSON.stringify({ logs: [..._logs], total: _logs.length }))
-        return
-      }
-      if (method === "DELETE") {
-        _logs.length = 0
-        res.writeHead(200, { "content-type": "application/json" })
-        res.end(JSON.stringify({ ok: true }))
-        return
-      }
-    }
-
-    res.writeHead(404, { "content-type": "application/json" })
-    res.end(JSON.stringify({ message: "Not Found" }))
-  })
-
-  await new Promise<void>((resolve, reject) => {
-    server.once("error", reject)
-    server.listen(port, () => { server.off("error", reject); resolve() })
-  })
-}
-
-// ─── Public entry ─────────────────────────────────────────────────────────────
-
-const isBun = typeof (globalThis as { Bun?: unknown }).Bun !== "undefined"
-
-export async function startDevtools(port: number): Promise<void> {
-  if (_started) return
-  _started = true
-
-  try {
-    subscribeBuffer()
-    if (isBun) {
-      await startBunDevtools(port)
-    } else {
-      await startNodeDevtools(port)
-    }
-    console.log(`[ciph] devtools inspector → http://localhost:${port}`)
-  } catch {
-    _started = false
-  }
-}
-
-// ─── Sub-App for Mounting on Same Port ────────────────────────────────────────
+// ─── Inspector sub-app (mount on same port as your Hono app) ──────────────────
+//
+// Usage in your Hono app:
+//   app.route("/ciph-devtools", getCiphInspectorApp())
+//   app.use("*", ciph({ privateKey: "..." }))
+//   // Inspector UI → http://localhost:<port>/ciph-devtools
 
 export function getCiphInspectorApp() {
   const app = new Hono()
 
   app.get("/", (c) => {
+    // Build absolute stream URL and root-relative logs URL from current request context
     const host = c.req.header("host") ?? "localhost"
     const proto = c.req.header("x-forwarded-proto") ?? "http"
-    const routePath = c.req.routePath.replace(/\/$/, "")
-    const streamUrl = `${proto}://${host}${routePath}/stream`
-    return c.html(buildInspectorHtml(streamUrl))
+    // routePath is the matched pattern e.g. "/ciph-devtools/*"; strip trailing wildcard/slash
+    const base = c.req.routePath.replace(/\/\*$/, "").replace(/\/$/, "")
+    const streamUrl = `${proto}://${host}${base}/stream`
+    const logsUrl = `${base}/logs`
+    return c.html(buildInspectorHtml(streamUrl, logsUrl))
   })
 
   app.get("/stream", (c) => {

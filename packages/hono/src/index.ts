@@ -1,7 +1,7 @@
 import * as core from "@ciph/core"
 import type { CiphErrorCode, CiphServerLog } from "@ciph/core"
 import type { Context, MiddlewareHandler, Next } from "hono"
-import { autoInitEmitter, startDevtools, getCiphInspectorApp } from "./devtools"
+import { autoInitEmitter, initDevtools, getCiphInspectorApp } from "./devtools"
 
 export { getCiphInspectorApp }
 
@@ -72,25 +72,6 @@ export interface CiphHonoConfig {
    */
   allowUnencrypted?: boolean
 
-  /**
-   * Built-in devtools server configuration.
-   * Automatically starts the HTTP + WebSocket inspector at http://localhost:<port>
-   * in development mode. Completely disabled in production.
-   *
-   * @example
-   * ciph({ privateKey: '...', devtools: { port: 4321 } })
-   * // Inspector available at http://localhost:4321
-   *
-   * @example
-   * ciph({ privateKey: '...', devtools: false }) // disable
-   */
-  devtools?: {
-    /** Enable devtools inspector server. Default: true in development. */
-    enabled?: boolean
-    /** Port for the inspector HTTP + WebSocket server. Default: 4321 */
-    port?: number
-  } | false
-
   /** @internal test-only */
   _testOverrides?: {
     encrypt?: typeof core.encrypt
@@ -128,7 +109,7 @@ type CiphContextWithVars = Context<{
   }
 }>
 
-const DEFAULT_EXCLUDE_ROUTES = ["/health", "/ciph", "/ciph/*", "/ciph-public-key"]
+const DEFAULT_EXCLUDE_ROUTES = ["/health", "/ciph", "/ciph/*", "/ciph-public-key", "/ciph-devtools", "/ciph-devtools/*"]
 const DEFAULT_MAX_PAYLOAD_SIZE = 10_485_760
 const BODY_METHODS = new Set(["POST", "PUT", "PATCH"])
 
@@ -518,18 +499,11 @@ export function ciph(config: CiphHonoConfig): MiddlewareHandler {
   }
 
   // ── Built-in devtools (dev only) ──────────────────────────────────────────────
+  // Initializes emitter + log buffer. Routes served via getCiphInspectorApp()
+  // mounted by the user at /ciph-devtools on their app (same port).
   if (process.env.NODE_ENV !== "production") {
-    const dtRaw = config.devtools
-    if (dtRaw !== false) {
-      const dtOpts = dtRaw ?? {}
-      const dtEnabled = dtOpts.enabled ?? true
-      if (dtEnabled) {
-        const port = dtOpts.port ?? 4321
-        // Both calls are idempotent — safe to call multiple times
-        autoInitEmitter()
-        void startDevtools(port)
-      }
-    }
+    autoInitEmitter()
+    initDevtools()
   }
 
   const excludeRoutes = config.excludeRoutes ?? DEFAULT_EXCLUDE_ROUTES

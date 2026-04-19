@@ -3676,16 +3676,17 @@ function ciphDevServer(config) {
   const maxLogs = config.maxLogs ?? 500;
   let logs = [];
   const listeners = /* @__PURE__ */ new Set();
-  const emitter = globalThis.ciphServerEmitter;
-  if (emitter?.on) {
+  let emitterSubscribed = false;
+  function ensureEmitterSubscribed() {
+    if (emitterSubscribed) return;
+    const g = globalThis;
+    const emitter = g.ciphServerEmitter;
+    if (!emitter?.on) return;
+    emitterSubscribed = true;
     emitter.on("log", (log) => {
       logs.unshift(log);
-      if (logs.length > maxLogs) {
-        logs.pop();
-      }
-      for (const listener of listeners) {
-        listener(log);
-      }
+      if (logs.length > maxLogs) logs.pop();
+      for (const listener of listeners) listener(log);
     });
   }
   app.get("/", (c) => {
@@ -3693,6 +3694,7 @@ function ciphDevServer(config) {
   });
   app.get("/health", (c) => c.json({ status: "ok" }));
   app.get("/logs", (c) => {
+    ensureEmitterSubscribed();
     return c.json({
       logs,
       total: logs.length,
@@ -3704,6 +3706,7 @@ function ciphDevServer(config) {
     return c.json({ ok: true });
   });
   app.get("/stream", (c) => {
+    ensureEmitterSubscribed();
     return streamSSE(c, async (stream) => {
       const listener = (log) => {
         stream.writeSSE({

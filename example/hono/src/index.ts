@@ -1,6 +1,6 @@
 import { Hono } from 'hono'
 import { cors } from 'hono/cors'
-import { ciph, ciphPublicKeyEndpoint } from '@ciph/hono'
+import { ciph, ciphPublicKeyEndpoint, getCiphInspectorApp } from '@ciph/hono'
 
 const app = new Hono()
 
@@ -19,8 +19,12 @@ app.use('/*', cors({
 const serverPublicKey = process.env.VITE_CIPH_SERVER_PUBLIC_KEY!
 app.get('/ciph-public-key', ciphPublicKeyEndpoint(serverPublicKey))
 
+// Devtools inspector at /ciph-devtools (same port, dev only)
+if (process.env.NODE_ENV !== 'production') {
+  app.route('/ciph-devtools', getCiphInspectorApp())
+}
+
 // v2 ECDH — uses privateKey from env (no shared secret on frontend)
-// Devtools inspector auto-starts at http://localhost:4321 in development
 app.use('/*', ciph({
   privateKey: process.env.CIPH_PRIVATE_KEY!,
 }))

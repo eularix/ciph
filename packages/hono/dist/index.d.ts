@@ -60,24 +60,6 @@ interface CiphHonoConfig {
      * Default: false. Migration only.
      */
     allowUnencrypted?: boolean;
-    /**
-     * Built-in devtools server configuration.
-     * Automatically starts the HTTP + WebSocket inspector at http://localhost:<port>
-     * in development mode. Completely disabled in production.
-     *
-     * @example
-     * ciph({ privateKey: '...', devtools: { port: 4321 } })
-     * // Inspector available at http://localhost:4321
-     *
-     * @example
-     * ciph({ privateKey: '...', devtools: false }) // disable
-     */
-    devtools?: {
-        /** Enable devtools inspector server. Default: true in development. */
-        enabled?: boolean;
-        /** Port for the inspector HTTP + WebSocket server. Default: 4321 */
-        port?: number;
-    } | false;
     /** @internal test-only */
     _testOverrides?: {
         encrypt?: typeof core.encrypt;

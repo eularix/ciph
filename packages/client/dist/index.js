@@ -306,8 +306,13 @@ function createClient(config) {
       if (req._ciphExcluded) {
         return response;
       }
-      const encryptedBody = response.data;
-      if (typeof encryptedBody !== "string") {
+      let ciphertext = null;
+      if (typeof response.data === "string") {
+        ciphertext = response.data;
+      } else if (response.data !== null && typeof response.data === "object" && response.data.status === "encrypted" && typeof response.data.data === "string") {
+        ciphertext = response.data.data;
+      }
+      if (ciphertext === null) {
         return response;
       }
       try {
@@ -322,7 +327,7 @@ function createClient(config) {
           }
           key = await (0, import_core.deriveKey)(config.secret, fingerprint);
         }
-        const decrypted = await (0, import_core.decrypt)(encryptedBody, key);
+        const decrypted = await (0, import_core.decrypt)(ciphertext, key);
         response.data = JSON.parse(decrypted.plaintext);
       } catch (error) {
         if (fallbackToPlain) {

@@ -3,6 +3,9 @@ import * as core from "@ciph/core";
 
 // src/devtools.ts
 import { Hono } from "hono";
+var _logs = [];
+var MAX_LOGS = 500;
+var _bufferSubscribed = false;
 function autoInitEmitter() {
   if (globalThis.ciphServerEmitter) return;
   const listeners = [];
@@ -21,8 +24,15 @@ function autoInitEmitter() {
     }
   };
 }
-var BASE_PATH = "/ciph-devtools";
-function buildInspectorHtml(streamUrl) {
+function initDevtools() {
+  if (_bufferSubscribed) return;
+  _bufferSubscribed = true;
+  globalThis.ciphServerEmitter?.on("log", (log) => {
+    _logs.unshift(log);
+    if (_logs.length > MAX_LOGS) _logs.pop();
+  });
+}
+function buildInspectorHtml(streamUrl, logsUrl) {
   return `<!DOCTYPE html>
 <html lang="en">
 <head>
@@ -102,7 +112,7 @@ function buildInspectorHtml(streamUrl) {
 <script>
 (function(){
   var streamUrl='${streamUrl}';
-  var logsUrl='${BASE_PATH}/logs';
+  var logsUrl='${logsUrl}';
   var logs=[],sel=null;
 
   function mk(tag,cls,txt){
@@ -236,19 +246,6 @@ function buildInspectorHtml(streamUrl) {
 </body>
 </html>`;
 }
-var _started = false;
-var _logs = [];
-var MAX_LOGS = 500;
-function subscribeBuffer() {
-  globalThis.ciphServerEmitter?.on("log", (log) => {
-    _logs.unshift(log);
-    if (_logs.length > MAX_LOGS) _logs.pop();
-  });
-}
-var corsHeaders = {
-  "access-control-allow-origin": "*",
-  "access-control-allow-methods": "GET, DELETE, OPTIONS"
-};
 function makeSSEStream(signal) {
   const enc = new TextEncoder();
   const { readable, writable } = new TransformStream();
@@ -272,136 +269,17 @@ function makeSSEStream(signal) {
 var sseResponseHeaders = {
   "content-type": "text/event-stream; charset=utf-8",
   "cache-control": "no-cache",
-  "connection": "keep-alive",
-  ...corsHeaders
+  "connection": "keep-alive"
 };
-async function startBunDevtools(port) {
-  const bunGlobal = globalThis;
-  const streamUrl = `http://localhost:${port}${BASE_PATH}/stream`;
-  const html = buildInspectorHtml(streamUrl);
-  bunGlobal.Bun.serve({
-    port,
-    fetch(req) {
-      const url = new URL(req.url);
-      const method = req.method;
-      if (method === "OPTIONS") return new Response(null, { status: 204, headers: corsHeaders });
-      if (url.pathname === "/" && method === "GET") {
-        return new Response(html, { headers: { "content-type": "text/html; charset=utf-8" } });
-      }
-      if (url.pathname === `${BASE_PATH}/stream` && method === "GET") {
-        return new Response(makeSSEStream(req.signal), { headers: sseResponseHeaders });
-      }
-      if (url.pathname === `${BASE_PATH}/logs`) {
-        if (method === "GET") {
-          return Response.json({ logs: [..._logs], total: _logs.length });
-        }
-        if (method === "DELETE") {
-          _logs.length = 0;
-          return Response.json({ ok: true });
-        }
-      }
-      return new Response(JSON.stringify({ message: "Not Found" }), {
-        status: 404,
-        headers: { "content-type": "application/json" }
-      });
-    }
-  });
-}
-async function startNodeDevtools(port) {
-  const httpModule = await import("http");
-  const server = httpModule.createServer((req, res) => {
-    const url = new URL(req.url ?? "/", `http://localhost:${port}`);
-    const method = req.method ?? "GET";
-    Object.entries(corsHeaders).forEach(([k, v]) => res.setHeader(k, v));
-    if (method === "OPTIONS") {
-      res.writeHead(204);
-      res.end();
-      return;
-    }
-    if (url.pathname === "/" && method === "GET") {
-      const streamUrl = `http://localhost:${port}${BASE_PATH}/stream`;
-      res.writeHead(200, { "content-type": "text/html; charset=utf-8" });
-      res.end(buildInspectorHtml(streamUrl));
-      return;
-    }
-    if (url.pathname === `${BASE_PATH}/stream` && method === "GET") {
-      res.writeHead(200, {
-        "content-type": "text/event-stream; charset=utf-8",
-        "cache-control": "no-cache",
-        "connection": "keep-alive"
-      });
-      res.flushHeaders?.();
-      res.write(": connected\n\n");
-      const send = (log) => {
-        try {
-          res.write(`data: ${JSON.stringify(log)}
-
-`);
-        } catch {
-        }
-      };
-      globalThis.ciphServerEmitter?.on("log", send);
-      const keepalive = setInterval(() => {
-        try {
-          res.write(": ping\n\n");
-        } catch {
-          clearInterval(keepalive);
-        }
-      }, 25e3);
-      req.on("close", () => {
-        clearInterval(keepalive);
-        globalThis.ciphServerEmitter?.off("log", send);
-      });
-      return;
-    }
-    if (url.pathname === `${BASE_PATH}/logs`) {
-      if (method === "GET") {
-        res.writeHead(200, { "content-type": "application/json" });
-        res.end(JSON.stringify({ logs: [..._logs], total: _logs.length }));
-        return;
-      }
-      if (method === "DELETE") {
-        _logs.length = 0;
-        res.writeHead(200, { "content-type": "application/json" });
-        res.end(JSON.stringify({ ok: true }));
-        return;
-      }
-    }
-    res.writeHead(404, { "content-type": "application/json" });
-    res.end(JSON.stringify({ message: "Not Found" }));
-  });
-  await new Promise((resolve, reject) => {
-    server.once("error", reject);
-    server.listen(port, () => {
-      server.off("error", reject);
-      resolve();
-    });
-  });
-}
-var isBun = typeof globalThis.Bun !== "undefined";
-async function startDevtools(port) {
-  if (_started) return;
-  _started = true;
-  try {
-    subscribeBuffer();
-    if (isBun) {
-      await startBunDevtools(port);
-    } else {
-      await startNodeDevtools(port);
-    }
-    console.log(`[ciph] devtools inspector \u2192 http://localhost:${port}`);
-  } catch {
-    _started = false;
-  }
-}
 function getCiphInspectorApp() {
   const app = new Hono();
   app.get("/", (c) => {
     const host = c.req.header("host") ?? "localhost";
     const proto = c.req.header("x-forwarded-proto") ?? "http";
-    const routePath = c.req.routePath.replace(/\/$/, "");
-    const streamUrl = `${proto}://${host}${routePath}/stream`;
-    return c.html(buildInspectorHtml(streamUrl));
+    const base = c.req.routePath.replace(/\/\*$/, "").replace(/\/$/, "");
+    const streamUrl = `${proto}://${host}${base}/stream`;
+    const logsUrl = `${base}/logs`;
+    return c.html(buildInspectorHtml(streamUrl, logsUrl));
   });
   app.get("/stream", (c) => {
     return new Response(makeSSEStream(c.req.raw.signal), { headers: sseResponseHeaders });
@@ -428,7 +306,7 @@ function ciphPublicKeyEndpoint(publicKey) {
   };
 }
 var CIPH_EXCLUDE_KEY = "ciph.exclude.route";
-var DEFAULT_EXCLUDE_ROUTES = ["/health", "/ciph", "/ciph/*", "/ciph-public-key"];
+var DEFAULT_EXCLUDE_ROUTES = ["/health", "/ciph", "/ciph/*", "/ciph-public-key", "/ciph-devtools", "/ciph-devtools/*"];
 var DEFAULT_MAX_PAYLOAD_SIZE = 10485760;
 var BODY_METHODS = /* @__PURE__ */ new Set(["POST", "PUT", "PATCH"]);
 function getCiphServerEmitter() {
@@ -740,16 +618,8 @@ function ciph(config) {
     );
   }
   if (process.env.NODE_ENV !== "production") {
-    const dtRaw = config.devtools;
-    if (dtRaw !== false) {
-      const dtOpts = dtRaw ?? {};
-      const dtEnabled = dtOpts.enabled ?? true;
-      if (dtEnabled) {
-        const port = dtOpts.port ?? 4321;
-        autoInitEmitter();
-        void startDevtools(port);
-      }
-    }
+    autoInitEmitter();
+    initDevtools();
   }
   const excludeRoutes = config.excludeRoutes ?? DEFAULT_EXCLUDE_ROUTES;
   const encryptFn = config._testOverrides?.encrypt ?? core.encrypt;
