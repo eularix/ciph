@@ -122,6 +122,10 @@ jobs:
           CHANGED_PACKAGES: ${{ needs.detect-and-promote.outputs.changed-packages }}
           NODE_AUTH_TOKEN: ${{ secrets.NPM_TOKEN }}
         run: |
+          # Create .npmrc with auth token for bun publish
+          echo "//registry.npmjs.org/:_authToken=${NODE_AUTH_TOKEN}" > ~/.npmrc
+          chmod 600 ~/.npmrc
+          
           IFS=',' read -ra PKGS <<< "$CHANGED_PACKAGES"
           for PKG in "${PKGS[@]}"; do
             for pkg_dir in packages/*/; do

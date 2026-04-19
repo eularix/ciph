@@ -74,6 +74,13 @@ jobs:
       - name: Build all packages
         run: bun run build
 
+      - name: Setup npm authentication for bun publish
+        env:
+          NODE_AUTH_TOKEN: ${{ secrets.NPM_TOKEN }}
+        run: |
+          echo "//registry.npmjs.org/:_authToken=${NODE_AUTH_TOKEN}" > ~/.npmrc
+          chmod 600 ~/.npmrc
+
       - name: Publish packages
         uses: changesets/action@v1
         with:
