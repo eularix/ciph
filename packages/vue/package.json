@@ -1,6 +1,6 @@
 {
   "name": "@ciph/vue",
-  "version": "1.6.0-beta.1",
+  "version": "2.0.0",
   "description": "Vue 3 client for Ciph transparent HTTP encryption (ECDH v2)",
   "main": "./dist/index.js",
   "module": "./dist/index.mjs",
@@ -26,7 +26,7 @@
   "peerDependencies": {
     "@ciph/core": "workspace:*",
     "axios": "^1.0.0",
-    "vue": ">=3.3.0"
+    "vue": ">=0.0.1"
   },
   "publishConfig": {
     "access": "public"
@@ -39,7 +39,7 @@
     "axios": "^1.7.0",
     "tsup": "^8.0.0",
     "typescript": "^5.0.0",
-    "vue": "^3.5.0",
+    "vue": "^0.0.1",
     "vue-tsc": "^2.0.0"
   }
 }
