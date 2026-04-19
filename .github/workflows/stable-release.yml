@@ -137,10 +137,17 @@ jobs:
       - name: Publish stable packages
         env:
           CHANGED_PACKAGES: ${{ needs.detect-and-promote.outputs.changed-packages }}
+          NPM_TOKEN: ${{ secrets.NPM_TOKEN }}
         run: |
-          # Create .npmrc with auth token for bun publish
-          echo "//registry.npmjs.org/:_authToken=${{ secrets.NPM_TOKEN }}" > ~/.npmrc
-          chmod 600 ~/.npmrc
+          # Use npm_config_userconfig or fallback to home directory
+          NPMRC="${npm_config_userconfig:=$HOME/.npmrc}"
+          
+          # Create .npmrc with auth token for bun/npm publish
+          echo "//registry.npmjs.org/:_authToken=$NPM_TOKEN" > "$NPMRC"
+          chmod 600 "$NPMRC"
+          
+          # Ensure NPM_CONFIG_USERCONFIG points to the file we just created
+          export NPM_CONFIG_USERCONFIG="$NPMRC"
           
           IFS=',' read -ra PKGS <<< "$CHANGED_PACKAGES"
           FAILED_PKGS=()
@@ -148,7 +155,7 @@ jobs:
             for pkg_dir in packages/*/; do
               if grep -q "\"name\": \"$PKG\"" "$pkg_dir/package.json" 2>/dev/null; then
                 echo "📦 Publishing $PKG..."
-                if (cd "$pkg_dir" && bun publish --tag latest); then
+                if (cd "$pkg_dir" && npm publish --tag latest); then
                   echo "✅ $PKG published successfully"
                 else
                   echo "❌ $PKG failed to publish, continuing with others..."
