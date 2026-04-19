@@ -26,7 +26,7 @@
   "peerDependencies": {
     "@ciph/core": "workspace:*",
     "axios": "^1.0.0",
-    "vue": ">=0.0.1"
+    "vue": ">=3.0.0"
   },
   "publishConfig": {
     "access": "public"
