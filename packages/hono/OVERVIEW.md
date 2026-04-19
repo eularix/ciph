@@ -46,3 +46,43 @@
 |--------------|--------------------------|
 | `@ciph/core` | Semua primitive crypto   |
 | `hono`       | Peer dependency          |
+
+---
+
+## DevTools Inspector
+
+Dev-only browser UI untuk inspect encrypted requests/responses real-time.
+
+### Quick Start
+
+```typescript
+import { autoInitEmitter, initDevtools, getCiphInspectorApp } from "@ciph/hono"
+
+if (process.env.NODE_ENV !== "production") {
+  autoInitEmitter()
+  initDevtools() // In-memory mode (default)
+  app.route("/ciph-devtools", getCiphInspectorApp())
+}
+
+// Open http://localhost:<port>/ciph-devtools
+```
+
+### Logging Modes
+
+**Temporary (default)** — In-memory circular buffer (500 logs)
+- Fast, zero I/O
+- Logs lost on app restart
+
+**Persistent** — Disk JSONL file + in-memory buffer
+- Audit trail of all requests
+- Survive app restart
+- Great for testing & debugging
+
+```typescript
+initDevtools({
+  temporary: false,
+  logFilePath: ".ciph-logs.jsonl"
+})
+```
+
+See [DEVTOOLS-LOGGING.md](./DEVTOOLS-LOGGING.md) for full documentation.
