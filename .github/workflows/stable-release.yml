@@ -6,7 +6,7 @@ on:
       - main
     paths:
       - 'packages/**'
-      - 'pnpm-lock.yaml'
+      - 'bun.lock'
       - '.github/workflows/stable-release.yml'
 
 permissions:
@@ -30,12 +30,11 @@ jobs:
         with:
           fetch-depth: 0
 
-      - uses: pnpm/action-setup@v4
+      - uses: oven-sh/setup-bun@v2
 
       - uses: actions/setup-node@v4
         with:
           node-version: 20
-          cache: pnpm
 
       - name: Detect changed packages since last stable release
         id: detect
@@ -82,17 +81,7 @@ jobs:
             DATE=$(date -u +"%Y-%m-%d")
 
             if [ ! -f "$CHANGELOG" ]; then
-              cat > "$CHANGELOG" << EOF
-# Changelog
-
-All notable changes to \`@ciph/${DIR}\` will be documented in this file.
-
-## [${VERSION}] - ${DATE}
-
-### Added
-- Initial release
-
-EOF
+              printf "# Changelog\n\nAll notable changes to @ciph/%s will be documented in this file.\n\n## [%s] - %s\n\n### Added\n- Initial release\n" "$DIR" "$VERSION" "$DATE" > "$CHANGELOG"
             fi
 
             git add "$CHANGELOG" || true
@@ -115,30 +104,32 @@ EOF
         with:
           fetch-depth: 0
 
-      - uses: pnpm/action-setup@v4
+      - uses: oven-sh/setup-bun@v2
 
       - uses: actions/setup-node@v4
         with:
           node-version: 20
-          cache: pnpm
           registry-url: 'https://registry.npmjs.org'
 
       - name: Install dependencies
-        run: pnpm install --frozen-lockfile
+        run: bun install
 
       - name: Build all packages
-        run: pnpm turbo build
+        run: bun run build
 
       - name: Publish stable packages
         env:
           CHANGED_PACKAGES: ${{ needs.detect-and-promote.outputs.changed-packages }}
-          NODE_AUTH_TOKEN: ${{ secrets.NPM_TOKEN }}
         run: |
+          # Create .npmrc with auth token for bun publish
+          echo "//registry.npmjs.org/:_authToken=${{ secrets.NPM_TOKEN }}" > ~/.npmrc
+          chmod 600 ~/.npmrc
+          
           IFS=',' read -ra PKGS <<< "$CHANGED_PACKAGES"
           for PKG in "${PKGS[@]}"; do
             for pkg_dir in packages/*/; do
               if grep -q "\"name\": \"$PKG\"" "$pkg_dir/package.json" 2>/dev/null; then
-                (cd "$pkg_dir" && pnpm publish --tag latest)
+                (cd "$pkg_dir" && bun publish --tag latest)
               fi
             done
           done

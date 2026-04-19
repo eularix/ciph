@@ -2,3 +2,31 @@ node_modules/
 .zed/
 .playwright-mcp/
 .claude/
+.turbo/
+pnpm-lock.yaml.backup
+
+# Build outputs
+**/dist/
+**/build/
+**/coverage/
+**/.next/
+**/.turbo/
+
+# Dependencies
+.pnpm-store/
+pnpm-debug.log
+
+# IDE
+.vscode/
+.idea/
+*.swp
+*.swo
+*~
+
+# OS
+.DS_Store
+Thumbs.db
+
+# Environment
+.env.local
+.env.*.local

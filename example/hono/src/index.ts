@@ -1,12 +1,33 @@
 import { Hono } from 'hono'
 import { cors } from 'hono/cors'
-import { ciph, ciphPublicKeyEndpoint } from '@ciph/hono'
+import { ciph, ciphPublicKeyEndpoint, getCiphInspectorApp, autoInitEmitter, initDevtools } from '@ciph/hono'
 
 const app = new Hono()
 
+// Initialize devtools emitter at startup (not lazily on first request)
+if (process.env.NODE_ENV !== 'production') {
+  autoInitEmitter()
+  
+  // TEMPORARY mode (default): in-memory only, fast, data lost on restart
+  // initDevtools()
+  
+  // Or use PERSISTENT mode to write logs to disk:
+  initDevtools({
+    temporary: false,
+    logFilePath: '.ciph-logs.jsonl',  // File will be created in project root
+    maxInMemoryLogs: 500,              // Circular buffer size
+  })
+  // 
+  // Persistent mode:
+  // - Logs appear in Inspector UI (same as temporary)
+  // - Logs also written to disk as JSONL for audit trails
+  // - Survive app restart
+  // See packages/hono/DEVTOOLS-LOGGING.md for details
+}
+
 // CORS — allow frontend dev origin
 app.use('/*', cors({
-  origin: ['http://localhost:5173', 'http://localhost:5174', 'http://localhost:4173'],
+  origin: ['http://localhost:5173', 'http://localhost:5174', 'http://localhost:5175', 'http://localhost:4173'],
   allowMethods: ['GET', 'POST', 'PUT', 'PATCH', 'DELETE', 'OPTIONS'],
   allowHeaders: ['Content-Type', 'X-Client-PublicKey', 'X-Fingerprint'],
   exposeHeaders: [],
@@ -20,10 +41,14 @@ const serverPublicKey = process.env.VITE_CIPH_SERVER_PUBLIC_KEY!
 app.get('/ciph-public-key', ciphPublicKeyEndpoint(serverPublicKey))
 
 // v2 ECDH — uses privateKey from env (no shared secret on frontend)
-// Devtools inspector auto-starts at http://localhost:4321 in development
 app.use('/*', ciph({
   privateKey: process.env.CIPH_PRIVATE_KEY!,
 }))
+
+// Devtools inspector at /ciph-devtools (same port, dev only)
+if (process.env.NODE_ENV !== 'production') {
+  app.route('/ciph-devtools', getCiphInspectorApp())
+}
 
 app.post('/api/echo', async (c) => {
   const body = await c.req.json()

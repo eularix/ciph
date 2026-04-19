@@ -1,4 +1,4 @@
-// @ciph/devtools-client v0.1.0
+// @ciph/devtools-client v0.3.0-beta.1
 "use strict";
 var __defProp = Object.defineProperty;
 var __getOwnPropDesc = Object.getOwnPropertyDescriptor;

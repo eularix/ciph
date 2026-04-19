@@ -61,6 +61,16 @@ interface DecryptResult {
     plaintext: string;
 }
 /**
+ * Wire format for encrypted HTTP responses (and future encrypted request bodies).
+ * Content-Type: application/json
+ */
+interface CiphWirePayload {
+    /** Always "encrypted" — machine-readable signal for the client to decrypt */
+    status: "encrypted";
+    /** Base64url ciphertext: IV[12] + AuthTag[16] + EncryptedData[n] */
+    data: string;
+}
+/**
  * ECDH P-256 key pair. Used for asymmetric key exchange (v2).
  * - privateKey: base64url-encoded pkcs8 (server only, never exposed)
  * - publicKey:  base64url-encoded raw uncompressed P-256 point (65 bytes)
@@ -180,4 +190,4 @@ declare function deriveSessionKey(rawSharedBytes: Uint8Array): Promise<string>;
  */
 declare function deriveRequestKey(sessionKey: string, fingerprintHash: string): Promise<string>;
 
-export { type CiphClientLog, type CiphCoreConfig, CiphError, type CiphErrorCode, type CiphErrorResponse, type CiphKeyPair, type CiphServerLog, type CiphServerLogEcdh, type DecryptResult, type EncryptResult, type FingerprintComponents, type FingerprintOptions, type FingerprintResult, decrypt, decryptFingerprint, deriveECDHBits, deriveKey, deriveRequestKey, deriveSessionKey, encrypt, encryptFingerprint, fromBase64url, generateFingerprint, generateKeyPair, randomBytes, toBase64url, validateFingerprint };
+export { type CiphClientLog, type CiphCoreConfig, CiphError, type CiphErrorCode, type CiphErrorResponse, type CiphKeyPair, type CiphServerLog, type CiphServerLogEcdh, type CiphWirePayload, type DecryptResult, type EncryptResult, type FingerprintComponents, type FingerprintOptions, type FingerprintResult, decrypt, decryptFingerprint, deriveECDHBits, deriveKey, deriveRequestKey, deriveSessionKey, encrypt, encryptFingerprint, fromBase64url, generateFingerprint, generateKeyPair, randomBytes, toBase64url, validateFingerprint };

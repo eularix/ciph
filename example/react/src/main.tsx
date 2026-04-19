@@ -11,7 +11,6 @@ createRoot(document.getElementById('root')!).render(
       serverPublicKey={import.meta.env.VITE_CIPH_SERVER_PUBLIC_KEY as string}
       devtools={{
         position: 'bottom',
-        inspectorPath: '/ciph-inspector',
       }}
     >
       <App />
