@@ -1,6 +1,6 @@
 {
   "name": "@ciph/vue",
-  "version": "1.2.0-beta.1",
+  "version": "1.3.0-beta.1",
   "description": "Vue 3 client for Ciph transparent HTTP encryption (ECDH v2)",
   "main": "./dist/index.js",
   "module": "./dist/index.mjs",
