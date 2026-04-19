@@ -126,13 +126,28 @@ jobs:
           chmod 600 ~/.npmrc
           
           IFS=',' read -ra PKGS <<< "$CHANGED_PACKAGES"
+          FAILED_PKGS=()
           for PKG in "${PKGS[@]}"; do
             for pkg_dir in packages/*/; do
               if grep -q "\"name\": \"$PKG\"" "$pkg_dir/package.json" 2>/dev/null; then
-                (cd "$pkg_dir" && bun publish --tag latest)
+                echo "📦 Publishing $PKG..."
+                if (cd "$pkg_dir" && bun publish --tag latest); then
+                  echo "✅ $PKG published successfully"
+                else
+                  echo "❌ $PKG failed to publish, continuing with others..."
+                  FAILED_PKGS+=("$PKG")
+                fi
               fi
             done
           done
+          
+          # Report result
+          if [ ${#FAILED_PKGS[@]} -gt 0 ]; then
+            echo "⚠️  Some packages failed: ${FAILED_PKGS[*]}"
+            exit 1
+          else
+            echo "✅ All packages published!"
+          fi
 
       - name: Create git release tags
         env:
