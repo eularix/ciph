@@ -2,3 +2,4 @@ node_modules/
 .zed/
 .playwright-mcp/
 .claude/
+.turbo/

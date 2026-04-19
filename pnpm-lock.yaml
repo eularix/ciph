@@ -162,6 +162,9 @@ importers:
       '@types/node':
         specifier: ^22.0.0
         version: 22.19.17
+      '@vitest/coverage-v8':
+        specifier: ^2.1.3
+        version: 2.1.9(vitest@2.1.9)
       hono:
         specifier: ^4.6.0
         version: 4.12.14
@@ -180,6 +183,9 @@ importers:
       '@types/node':
         specifier: ^22.19.17
         version: 22.19.17
+      '@vitest/coverage-v8':
+        specifier: ^2.1.3
+        version: 2.1.9(vitest@2.1.9)
       tsup:
         specifier: ^8.3.0
         version: 8.5.1(postcss@8.5.10)(typescript@5.9.3)
@@ -204,6 +210,9 @@ importers:
       '@types/react-dom':
         specifier: ^18.3.0
         version: 18.3.7(@types/react@18.3.28)
+      '@vitest/coverage-v8':
+        specifier: ^2.1.3
+        version: 2.1.9(vitest@2.1.9)
       '@vitest/ui':
         specifier: ^2.0.5
         version: 2.1.9(vitest@2.1.9)
@@ -237,6 +246,9 @@ importers:
       '@types/ws':
         specifier: ^8.5.12
         version: 8.18.1
+      '@vitest/coverage-v8':
+        specifier: ^2.1.3
+        version: 2.1.9(vitest@2.1.9)
       hono:
         specifier: ^4.12.14
         version: 4.12.14
@@ -271,6 +283,9 @@ importers:
       '@types/node':
         specifier: ^22.0.0
         version: 22.19.17
+      '@vitest/coverage-v8':
+        specifier: ^2.1.3
+        version: 2.1.9(vitest@2.1.9)
       hono:
         specifier: ^4.6.0
         version: 4.12.14
@@ -3932,7 +3947,7 @@ snapshots:
       std-env: 3.10.0
       test-exclude: 7.0.2
       tinyrainbow: 1.2.0
-      vitest: 2.1.9(@types/node@25.6.0)(@vitest/ui@2.1.9)(jsdom@24.1.3)(lightningcss@1.32.0)
+      vitest: 2.1.9(@types/node@22.19.17)(@vitest/ui@2.1.9)(jsdom@24.1.3)(lightningcss@1.32.0)
     transitivePeerDependencies:
       - supports-color
 
@@ -3942,6 +3957,14 @@ snapshots:
       '@vitest/utils': 2.1.9
       chai: 5.3.3
       tinyrainbow: 1.2.0
+
+  '@vitest/mocker@2.1.9(vite@5.4.21(@types/node@22.19.17)(lightningcss@1.32.0))':
+    dependencies:
+      '@vitest/spy': 2.1.9
+      estree-walker: 3.0.3
+      magic-string: 0.30.21
+    optionalDependencies:
+      vite: 5.4.21(@types/node@22.19.17)(lightningcss@1.32.0)
 
   '@vitest/mocker@2.1.9(vite@5.4.21(@types/node@25.6.0)(lightningcss@1.32.0))':
     dependencies:
@@ -3979,7 +4002,7 @@ snapshots:
       sirv: 3.0.2
       tinyglobby: 0.2.16
       tinyrainbow: 1.2.0
-      vitest: 2.1.9(@types/node@25.6.0)(@vitest/ui@2.1.9)(jsdom@24.1.3)(lightningcss@1.32.0)
+      vitest: 2.1.9(@types/node@22.19.17)(@vitest/ui@2.1.9)(jsdom@24.1.3)(lightningcss@1.32.0)
 
   '@vitest/utils@2.1.9':
     dependencies:
@@ -5486,7 +5509,7 @@ snapshots:
   vitest@2.1.9(@types/node@22.19.17)(@vitest/ui@2.1.9)(jsdom@24.1.3)(lightningcss@1.32.0):
     dependencies:
       '@vitest/expect': 2.1.9
-      '@vitest/mocker': 2.1.9(vite@5.4.21(@types/node@25.6.0)(lightningcss@1.32.0))
+      '@vitest/mocker': 2.1.9(vite@5.4.21(@types/node@22.19.17)(lightningcss@1.32.0))
       '@vitest/pretty-format': 2.1.9
       '@vitest/runner': 2.1.9
       '@vitest/snapshot': 2.1.9
