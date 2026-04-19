@@ -25,17 +25,20 @@ export function ciphDevServer(config: CiphDevServerConfig): Hono {
   const maxLogs = config.maxLogs ?? 500
   let logs: CiphServerLog[] = []
   const listeners = new Set<(log: CiphServerLog) => void>()
+  let emitterSubscribed = false
 
-  const emitter = (globalThis as any).ciphServerEmitter
-  if (emitter?.on) {
+  // Lazy subscription: emitter may not exist yet when ciphDevServer() is called.
+  // Subscribe on first use so we catch the emitter even if ciph() runs after ciphDevServer().
+  function ensureEmitterSubscribed(): void {
+    if (emitterSubscribed) return
+    const g = globalThis as { ciphServerEmitter?: { on: (e: string, l: (log: CiphServerLog) => void) => void } }
+    const emitter = g.ciphServerEmitter
+    if (!emitter?.on) return
+    emitterSubscribed = true
     emitter.on('log', (log: CiphServerLog) => {
       logs.unshift(log)
-      if (logs.length > maxLogs) {
-        logs.pop()
-      }
-      for (const listener of listeners) {
-        listener(log)
-      }
+      if (logs.length > maxLogs) logs.pop()
+      for (const listener of listeners) listener(log)
     })
   }
 
@@ -46,6 +49,7 @@ export function ciphDevServer(config: CiphDevServerConfig): Hono {
   app.get('/health', (c) => c.json({ status: 'ok' }))
 
   app.get('/logs', (c) => {
+    ensureEmitterSubscribed()
     return c.json({
       logs,
       total: logs.length,
@@ -59,6 +63,7 @@ export function ciphDevServer(config: CiphDevServerConfig): Hono {
   })
 
   app.get('/stream', (c) => {
+    ensureEmitterSubscribed()
     return streamSSE(c, async (stream) => {
       const listener = (log: CiphServerLog) => {
         stream.writeSSE({

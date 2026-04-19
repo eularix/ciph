@@ -11,6 +11,26 @@ interface CiphHonoEmitter {
 declare global {
     var ciphServerEmitter: CiphHonoEmitter | undefined;
 }
+interface CiphDevtoolsConfig {
+    /**
+     * If true (default), keep logs only in memory (_logs array / circular buffer).
+     * If false, also persist logs to disk as JSONL (JSON Lines format).
+     * File-based logging requires Node.js runtime.
+     */
+    temporary?: boolean;
+    /**
+     * Path to log file (JSONL format). Only used if temporary === false.
+     * Default: ".ciph-logs.jsonl"
+     * Relative to process.cwd() in Node.js.
+     */
+    logFilePath?: string;
+    /**
+     * Max in-memory buffer size (circular). Default: 500
+     */
+    maxInMemoryLogs?: number;
+}
+declare function autoInitEmitter(): void;
+declare function initDevtools(config?: CiphDevtoolsConfig): void;
 declare function getCiphInspectorApp(): Hono<hono_types.BlankEnv, hono_types.BlankSchema, "/">;
 
 /**
@@ -60,24 +80,6 @@ interface CiphHonoConfig {
      * Default: false. Migration only.
      */
     allowUnencrypted?: boolean;
-    /**
-     * Built-in devtools server configuration.
-     * Automatically starts the HTTP + WebSocket inspector at http://localhost:<port>
-     * in development mode. Completely disabled in production.
-     *
-     * @example
-     * ciph({ privateKey: '...', devtools: { port: 4321 } })
-     * // Inspector available at http://localhost:4321
-     *
-     * @example
-     * ciph({ privateKey: '...', devtools: false }) // disable
-     */
-    devtools?: {
-        /** Enable devtools inspector server. Default: true in development. */
-        enabled?: boolean;
-        /** Port for the inspector HTTP + WebSocket server. Default: 4321 */
-        port?: number;
-    } | false;
     /** @internal test-only */
     _testOverrides?: {
         encrypt?: typeof core.encrypt;
@@ -86,4 +88,4 @@ interface CiphHonoConfig {
 declare function ciphExclude(): MiddlewareHandler;
 declare function ciph(config: CiphHonoConfig): MiddlewareHandler;
 
-export { type CiphHonoConfig, ciph, ciphExclude, ciphPublicKeyEndpoint, getCiphInspectorApp };
+export { type CiphDevtoolsConfig, type CiphHonoConfig, autoInitEmitter, ciph, ciphExclude, ciphPublicKeyEndpoint, getCiphInspectorApp, initDevtools };

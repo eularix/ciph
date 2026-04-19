@@ -448,8 +448,22 @@ export function createClient(config: CiphClientConfig): {
         return response
       }
 
-      const encryptedBody = response.data
-      if (typeof encryptedBody !== "string") {
+      // Support both wire formats:
+      // - Legacy: raw ciphertext string (text/plain)
+      // - Current: { status: "encrypted", data: "<ciphertext>" } (application/json)
+      let ciphertext: string | null = null
+      if (typeof response.data === "string") {
+        ciphertext = response.data
+      } else if (
+        response.data !== null &&
+        typeof response.data === "object" &&
+        (response.data as { status?: unknown }).status === "encrypted" &&
+        typeof (response.data as { data?: unknown }).data === "string"
+      ) {
+        ciphertext = (response.data as { data: string }).data
+      }
+
+      if (ciphertext === null) {
         return response
       }
 
@@ -466,7 +480,7 @@ export function createClient(config: CiphClientConfig): {
           key = await deriveKey(config.secret!, fingerprint)
         }
 
-        const decrypted = await decrypt(encryptedBody, key)
+        const decrypted = await decrypt(ciphertext, key)
         response.data = JSON.parse(decrypted.plaintext) as unknown
       } catch (error) {
         if (fallbackToPlain) {

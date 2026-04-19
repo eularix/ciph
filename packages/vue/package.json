@@ -1,6 +1,6 @@
 {
   "name": "@ciph/vue",
-  "version": "1.2.0-beta.1",
+  "version": "1.4.0-beta.1",
   "description": "Vue 3 client for Ciph transparent HTTP encryption (ECDH v2)",
   "main": "./dist/index.js",
   "module": "./dist/index.mjs",
@@ -18,6 +18,8 @@
   "scripts": {
     "build": "tsup",
     "dev": "tsup --watch",
+    "test": "echo 'no tests'",
+    "test:coverage": "echo 'no tests'",
     "type-check": "vue-tsc --noEmit",
     "lint": "echo 'no lint'"
   },

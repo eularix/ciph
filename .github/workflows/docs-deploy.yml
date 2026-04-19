@@ -18,18 +18,17 @@ jobs:
         with:
           fetch-depth: 0
 
-      - uses: pnpm/action-setup@v4
+      - uses: oven-sh/setup-bun@v2
 
       - uses: actions/setup-node@v4
         with:
           node-version: 20
-          cache: pnpm
 
       - name: Install dependencies
-        run: pnpm install --frozen-lockfile
+        run: bun install
 
       - name: Build docs
-        run: cd docs && pnpm build
+        run: cd docs && bun run build
 
       - name: Deploy to Vercel
         uses: vercel/action@v6
