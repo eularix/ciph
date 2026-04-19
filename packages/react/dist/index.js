@@ -770,10 +770,10 @@ function PanelContent({ colors, entries, selected, setSelected, sel, onClear, on
                 display: "flex",
                 alignItems: "center",
                 gap: 12,
-                borderBottom: `1px solid ${colors.border2}`,
+                borderBottom: `1px solid ${colors.border}`,
                 borderLeft: `3px solid ${isSel ? "#60a5fa" : e.log.status >= 400 ? e.log.status >= 500 ? "#f87171" : "#fb923c" : "transparent"}`,
                 cursor: "pointer",
-                background: isSel ? colors.bg4 : "transparent",
+                background: isSel ? colors.bg3 : "transparent",
                 transition: "all 0.15s ease"
               },
               onMouseEnter: (e2) => {

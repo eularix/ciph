@@ -67,14 +67,16 @@ function initDevtools(config) {
   if (config?.maxInMemoryLogs) {
     _maxLogs = config.maxInMemoryLogs;
   }
-  globalThis.ciphServerEmitter?.on("log", (log) => {
-    _logs.unshift(log);
-    if (_logs.length > _maxLogs) _logs.pop();
-    if (_devtoolsConfig.temporary === false) {
-      writeLogToFile(log).catch(() => {
-      });
-    }
-  });
+  if (globalThis.ciphServerEmitter && typeof globalThis.ciphServerEmitter.on === "function") {
+    globalThis.ciphServerEmitter.on("log", (log) => {
+      _logs.unshift(log);
+      if (_logs.length > _maxLogs) _logs.pop();
+      if (_devtoolsConfig.temporary === false) {
+        writeLogToFile(log).catch(() => {
+        });
+      }
+    });
+  }
 }
 function buildInspectorHtml(streamUrl, logsUrl) {
   return `<!DOCTYPE html>

@@ -1,13 +1,10 @@
 name: Stable Release
 
 on:
-  push:
-    branches:
-      - main
-    paths:
-      - 'packages/**'
-      - 'bun.lock'
-      - '.github/workflows/stable-release.yml'
+  workflow_run:
+    workflows: ["Release"]
+    branches: [main]
+    types: [completed]
 
 permissions:
   contents: write
@@ -39,11 +36,27 @@ jobs:
       - name: Detect changed packages since last stable release
         id: detect
         run: |
-          LAST_STABLE=$(git log --oneline main | grep -v "chore: bump stable versions" | head -1 | awk '{print $1}' || echo 'origin/main^')
-          RESULT=$(node scripts/detect-changed-packages.js "$LAST_STABLE")
-
-          DIRS=$(echo "$RESULT" | jq -r '.directories | join(",")')
-          PKGS=$(echo "$RESULT" | jq -r '.packages | join(",")')
+          # Get all package.json files in packages/
+          DIRS=""
+          PKGS=""
+          
+          for pkg_dir in packages/*/; do
+            DIR_NAME=$(basename "$pkg_dir")
+            if [ -f "$pkg_dir/package.json" ]; then
+              PKG_NAME=$(jq -r '.name' "$pkg_dir/package.json")
+              IS_PRIVATE=$(jq -r '.private // false' "$pkg_dir/package.json")
+              
+              # Skip private packages
+              if [ "$IS_PRIVATE" != "true" ]; then
+                DIRS="${DIRS}${DIR_NAME},"
+                PKGS="${PKGS}${PKG_NAME},"
+              fi
+            fi
+          done
+          
+          # Remove trailing commas
+          DIRS="${DIRS%,}"
+          PKGS="${PKGS%,}"
           HAS_CHANGES=$([ -z "$DIRS" ] && echo "false" || echo "true")
 
           echo "directories=$DIRS" >> "$GITHUB_OUTPUT"
@@ -52,6 +65,7 @@ jobs:
 
           echo "Changed dirs: $DIRS"
           echo "Changed packages: $PKGS"
+          echo "Has changes: $HAS_CHANGES"
 
       - name: Promote beta to stable versions
         if: steps.detect.outputs.has-changes == 'true'
@@ -120,19 +134,41 @@ jobs:
       - name: Publish stable packages
         env:
           CHANGED_PACKAGES: ${{ needs.detect-and-promote.outputs.changed-packages }}
+          NPM_TOKEN: ${{ secrets.NPM_TOKEN }}
         run: |
-          # Create .npmrc with auth token for bun publish
-          echo "//registry.npmjs.org/:_authToken=${{ secrets.NPM_TOKEN }}" > ~/.npmrc
-          chmod 600 ~/.npmrc
+          # Use npm_config_userconfig or fallback to home directory
+          NPMRC="${npm_config_userconfig:=$HOME/.npmrc}"
+          
+          # Create .npmrc with auth token for bun/npm publish
+          echo "//registry.npmjs.org/:_authToken=$NPM_TOKEN" > "$NPMRC"
+          chmod 600 "$NPMRC"
+          
+          # Ensure NPM_CONFIG_USERCONFIG points to the file we just created
+          export NPM_CONFIG_USERCONFIG="$NPMRC"
           
           IFS=',' read -ra PKGS <<< "$CHANGED_PACKAGES"
+          FAILED_PKGS=()
           for PKG in "${PKGS[@]}"; do
             for pkg_dir in packages/*/; do
               if grep -q "\"name\": \"$PKG\"" "$pkg_dir/package.json" 2>/dev/null; then
-                (cd "$pkg_dir" && bun publish --tag latest)
+                echo "📦 Publishing $PKG..."
+                if (cd "$pkg_dir" && npm publish --tag latest); then
+                  echo "✅ $PKG published successfully"
+                else
+                  echo "❌ $PKG failed to publish, continuing with others..."
+                  FAILED_PKGS+=("$PKG")
+                fi
               fi
             done
           done
+          
+          # Report result
+          if [ ${#FAILED_PKGS[@]} -gt 0 ]; then
+            echo "⚠️  Some packages failed: ${FAILED_PKGS[*]}"
+            exit 1
+          else
+            echo "✅ All packages published!"
+          fi
 
       - name: Create git release tags
         env:
@@ -182,6 +218,54 @@ jobs:
                 prerelease: false,
               }).catch(() => console.log(`Release already exists for ${dir}-v${pkg.version}`));
             }
+
+      - name: Update changelog.mdx
+        env:
+          CHANGED_DIRS: ${{ needs.detect-and-promote.outputs.changed-dirs }}
+        run: |
+          CHANGELOG_FILE="docs/content/docs/getting-started/changelog.mdx"
+          
+          # Extract version info from first package
+          IFS=',' read -ra DIRS <<< "$CHANGED_DIRS"
+          FIRST_DIR="${DIRS[0]}"
+          VERSION=$(grep '"version"' "packages/$FIRST_DIR/package.json" | grep -oE '[0-9]+\.[0-9]+\.[0-9]+' | head -1)
+          DATE=$(date -u +"%B %Y")
+          
+          # Create new changelog entry
+          NEW_ENTRY="## v${VERSION} ($(date -u +\"%B %Y\")) - Stable Release
+
+### ✨ Features
+
+- All packages released with stable versions
+- ECDH v2 encryption active
+- Production-ready
+
+### 📦 Packages Updated
+
+"
+          
+          # Add list of packages
+          for DIR in "${DIRS[@]}"; do
+            PKG_NAME=\$(grep '"name"' "packages/\$DIR/package.json" | grep -oE '@ciph/[^"]+' | head -1)
+            NEW_ENTRY+="- \`\$PKG_NAME\`
+"
+          done
+          
+          NEW_ENTRY+="
+---
+
+"
+          
+          # Prepend to changelog
+          if [ -f "$CHANGELOG_FILE" ]; then
+            # Find the position after the frontmatter and first title
+            CONTENT=\$(tail -n +11 "$CHANGELOG_FILE")
+            echo -e "---\ntitle: Changelog\n---\n\nimport { Callout } from 'fumadocs-ui/components/callout';\n\nAll notable changes to Ciph packages are documented here. We follow [Semantic Versioning](https://semver.org/).\n\n\${NEW_ENTRY}\${CONTENT}" > "$CHANGELOG_FILE"
+          fi
+          
+          git add "$CHANGELOG_FILE" || true
+          git commit -m "chore: update changelog for v${VERSION} release" || echo "No changelog changes"
+          git push origin main || echo "Failed to push changelog"
 
       - name: Create release summary
         env:

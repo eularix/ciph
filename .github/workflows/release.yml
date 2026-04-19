@@ -1,14 +1,10 @@
 name: Release
 
 on:
-  push:
-    branches:
-      - main
-    paths:
-      - '.changeset/**'
-      - 'packages/**'
-      - 'package.json'
-      - 'bun.lock'
+  workflow_run:
+    workflows: ["CI"]
+    branches: [main]
+    types: [completed]
 
 permissions:
   contents: write
@@ -87,7 +83,6 @@ jobs:
           createGithubReleases: aggregate
         env:
           GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
-          NODE_AUTH_TOKEN: ${{ secrets.NPM_TOKEN }}
 
       - name: Generate release notes
         if: always()

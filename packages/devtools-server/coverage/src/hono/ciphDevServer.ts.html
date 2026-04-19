@@ -23,9 +23,9 @@
         <div class='clearfix'>
             
             <div class='fl pad1y space-right2'>
-                <span class="strong">3.12% </span>
+                <span class="strong">2.98% </span>
                 <span class="quiet">Statements</span>
-                <span class='fraction'>2/64</span>
+                <span class='fraction'>2/67</span>
             </div>
         
             
@@ -44,9 +44,9 @@
         
             
             <div class='fl pad1y space-right2'>
-                <span class="strong">3.12% </span>
+                <span class="strong">2.98% </span>
                 <span class="quiet">Lines</span>
-                <span class='fraction'>2/64</span>
+                <span class='fraction'>2/67</span>
             </div>
         
             
@@ -151,7 +151,12 @@
 <a name='L86'></a><a href='#L86'>86</a>
 <a name='L87'></a><a href='#L87'>87</a>
 <a name='L88'></a><a href='#L88'>88</a>
-<a name='L89'></a><a href='#L89'>89</a></td><td class="line-coverage quiet"><span class="cline-any cline-yes">1x</span>
+<a name='L89'></a><a href='#L89'>89</a>
+<a name='L90'></a><a href='#L90'>90</a>
+<a name='L91'></a><a href='#L91'>91</a>
+<a name='L92'></a><a href='#L92'>92</a>
+<a name='L93'></a><a href='#L93'>93</a>
+<a name='L94'></a><a href='#L94'>94</a></td><td class="line-coverage quiet"><span class="cline-any cline-yes">1x</span>
 <span class="cline-any cline-neutral">&nbsp;</span>
 <span class="cline-any cline-neutral">&nbsp;</span>
 <span class="cline-any cline-neutral">&nbsp;</span>
@@ -178,6 +183,9 @@
 <span class="cline-any cline-no">&nbsp;</span>
 <span class="cline-any cline-no">&nbsp;</span>
 <span class="cline-any cline-no">&nbsp;</span>
+<span class="cline-any cline-no">&nbsp;</span>
+<span class="cline-any cline-neutral">&nbsp;</span>
+<span class="cline-any cline-neutral">&nbsp;</span>
 <span class="cline-any cline-neutral">&nbsp;</span>
 <span class="cline-any cline-no">&nbsp;</span>
 <span class="cline-any cline-no">&nbsp;</span>
@@ -205,12 +213,14 @@
 <span class="cline-any cline-no">&nbsp;</span>
 <span class="cline-any cline-no">&nbsp;</span>
 <span class="cline-any cline-no">&nbsp;</span>
-<span class="cline-any cline-neutral">&nbsp;</span>
-<span class="cline-any cline-no">&nbsp;</span>
-<span class="cline-any cline-no">&nbsp;</span>
-<span class="cline-any cline-no">&nbsp;</span>
 <span class="cline-any cline-no">&nbsp;</span>
 <span class="cline-any cline-neutral">&nbsp;</span>
+<span class="cline-any cline-no">&nbsp;</span>
+<span class="cline-any cline-no">&nbsp;</span>
+<span class="cline-any cline-no">&nbsp;</span>
+<span class="cline-any cline-no">&nbsp;</span>
+<span class="cline-any cline-neutral">&nbsp;</span>
+<span class="cline-any cline-no">&nbsp;</span>
 <span class="cline-any cline-no">&nbsp;</span>
 <span class="cline-any cline-no">&nbsp;</span>
 <span class="cline-any cline-no">&nbsp;</span>
@@ -266,17 +276,20 @@ export <span class="fstat-no" title="function not covered" >function ciphDevServ
 <span class="cstat-no" title="statement not covered" >  const maxLogs = config.maxLogs ?? 500</span>
 <span class="cstat-no" title="statement not covered" >  let logs: CiphServerLog[] = []</span>
 <span class="cstat-no" title="statement not covered" >  const listeners = new Set&lt;(log: CiphServerLog) =&gt; void&gt;()</span>
+<span class="cstat-no" title="statement not covered" >  let emitterSubscribed = false</span>
 &nbsp;
-<span class="cstat-no" title="statement not covered" >  const emitter = (globalThis as any).ciphServerEmitter</span>
-<span class="cstat-no" title="statement not covered" >  if (emitter?.on) {</span>
+  // Lazy subscription: emitter may not exist yet when ciphDevServer() is called.
+  // Subscribe on first use so we catch the emitter even if ciph() runs after ciphDevServer().
+<span class="cstat-no" title="statement not covered" >  function ensureEmitterSubscribed(): void {</span>
+<span class="cstat-no" title="statement not covered" >    if (emitterSubscribed) return</span>
+<span class="cstat-no" title="statement not covered" >    const g = globalThis as { ciphServerEmitter?: { on: (e: string, l: (log: CiphServerLog) =&gt; void) =&gt; void } }</span>
+<span class="cstat-no" title="statement not covered" >    const emitter = g.ciphServerEmitter</span>
+<span class="cstat-no" title="statement not covered" >    if (!emitter?.on) return</span>
+<span class="cstat-no" title="statement not covered" >    emitterSubscribed = true</span>
 <span class="cstat-no" title="statement not covered" >    emitter.on('log', (log: CiphServerLog) =&gt; {</span>
 <span class="cstat-no" title="statement not covered" >      logs.unshift(log)</span>
-<span class="cstat-no" title="statement not covered" >      if (logs.length &gt; maxLogs) {</span>
-<span class="cstat-no" title="statement not covered" >        logs.pop()</span>
-<span class="cstat-no" title="statement not covered" >      }</span>
-<span class="cstat-no" title="statement not covered" >      for (const listener of listeners) {</span>
-<span class="cstat-no" title="statement not covered" >        listener(log)</span>
-<span class="cstat-no" title="statement not covered" >      }</span>
+<span class="cstat-no" title="statement not covered" >      if (logs.length &gt; maxLogs) logs.pop()</span>
+<span class="cstat-no" title="statement not covered" >      for (const listener of listeners) listener(log)</span>
 <span class="cstat-no" title="statement not covered" >    })</span>
 <span class="cstat-no" title="statement not covered" >  }</span>
 &nbsp;
@@ -287,6 +300,7 @@ export <span class="fstat-no" title="function not covered" >function ciphDevServ
 <span class="cstat-no" title="statement not covered" >  app.get('/health', (c) =&gt; c.json({ status: 'ok' }))</span>
 &nbsp;
 <span class="cstat-no" title="statement not covered" >  app.get('/logs', (c) =&gt; {</span>
+<span class="cstat-no" title="statement not covered" >    ensureEmitterSubscribed()</span>
 <span class="cstat-no" title="statement not covered" >    return c.json({</span>
 <span class="cstat-no" title="statement not covered" >      logs,</span>
 <span class="cstat-no" title="statement not covered" >      total: logs.length,</span>
@@ -300,6 +314,7 @@ export <span class="fstat-no" title="function not covered" >function ciphDevServ
 <span class="cstat-no" title="statement not covered" >  })</span>
 &nbsp;
 <span class="cstat-no" title="statement not covered" >  app.get('/stream', (c) =&gt; {</span>
+<span class="cstat-no" title="statement not covered" >    ensureEmitterSubscribed()</span>
 <span class="cstat-no" title="statement not covered" >    return streamSSE(c, async (stream) =&gt; {</span>
 <span class="cstat-no" title="statement not covered" >      const listener = (log: CiphServerLog) =&gt; {</span>
 <span class="cstat-no" title="statement not covered" >        stream.writeSSE({</span>
@@ -334,7 +349,7 @@ export <span class="fstat-no" title="function not covered" >function ciphDevServ
             <div class='footer quiet pad2 space-top1 center small'>
                 Code coverage generated by
                 <a href="https://istanbul.js.org/" target="_blank" rel="noopener noreferrer">istanbul</a>
-                at 2026-04-19T05:34:09.210Z
+                at 2026-04-19T09:49:52.760Z
             </div>
         <script src="../../prettify.js"></script>
         <script>

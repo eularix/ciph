@@ -1,6 +1,6 @@
 {
   "name": "@ciph/client",
-  "version": "0.7.0-beta.1",
+  "version": "2.0.0",
   "description": "Transparent HTTP encryption client for Ciph",
   "main": "./dist/index.js",
   "module": "./dist/index.mjs",
@@ -22,7 +22,7 @@
     "lint": "echo 'no lint'"
   },
   "peerDependencies": {
-    "@ciph/core": "workspace:*",
+    "@ciph/core": "0.7.0",
     "axios": "^1.0.0"
   },
   "publishConfig": {
