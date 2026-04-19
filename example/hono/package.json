@@ -1,5 +1,7 @@
 {
   "name": "backend",
+  "private": true,
+  "version": "1.0.0",
   "scripts": {
     "dev": "NODE_ENV=development bun --hot src/index.ts"
   },
