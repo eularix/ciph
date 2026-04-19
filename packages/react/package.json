@@ -1,6 +1,6 @@
 {
   "name": "@ciph/react",
-  "version": "0.2.0-beta.1",
+  "version": "0.3.0-beta.1",
   "description": "React client for Ciph transparent HTTP encryption (ECDH v2)",
   "main": "./dist/index.js",
   "module": "./dist/index.mjs",
