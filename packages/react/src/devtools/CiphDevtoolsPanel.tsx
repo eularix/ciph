@@ -24,21 +24,21 @@ interface BtnSnap { side: EdgeSide; offset: number }
 // ─── Helpers ──────────────────────────────────────────────────────────────────
 
 function statusColor(status: number): string {
-  if (status >= 500) return "#f85149"
-  if (status >= 400) return "#d29922"
-  if (status >= 200) return "#3fb950"
-  return "#8b949e"
+  if (status >= 500) return "#f87171"
+  if (status >= 400) return "#fb923c"
+  if (status >= 200) return "#4ade80"
+  return "#a1a5b7"
 }
 
 function methodColor(method: string): { bg: string; text: string } {
   const m: Record<string, { bg: string; text: string }> = {
-    GET:    { bg: "#0d1b2e", text: "#58a6ff" },
-    POST:   { bg: "#0d2010", text: "#3fb950" },
-    PUT:    { bg: "#1e1500", text: "#d29922" },
-    PATCH:  { bg: "#1a0d2e", text: "#bc8cff" },
-    DELETE: { bg: "#2e0d0d", text: "#f85149" },
+    GET:    { bg: "rgba(96,165,250,0.15)", text: "#60a5fa" },
+    POST:   { bg: "rgba(74,222,128,0.15)", text: "#4ade80" },
+    PUT:    { bg: "rgba(251,146,60,0.15)", text: "#fb923c" },
+    PATCH:  { bg: "rgba(216,180,254,0.15)", text: "#d8b4fe" },
+    DELETE: { bg: "rgba(248,113,113,0.15)", text: "#f87171" },
   }
-  return m[method] ?? { bg: "#1c2230", text: "#8b949e" }
+  return m[method] ?? { bg: "rgba(156,164,200,0.1)", text: "#a1a5b7" }
 }
 
 function fmtBody(v: unknown): string {
@@ -207,8 +207,8 @@ function DevtoolsPanel({
   const sel: LogEntry | null = (selected !== null ? entries[selected] : null) ?? null
 
   const colors = {
-    bg: "#0f1117", bg2: "#161b22", bg3: "#1c2230",
-    border: "#30363d", text: "#e6edf3", text2: "#8b949e",
+    bg: "#0a0e27", bg2: "#0f1423", bg3: "#151b3a", bg4: "#1a1f4f",
+    border: "#2d3e7a", border2: "#1a2555", text: "#f0f4ff", text2: "#9ca4c8",
   }
 
   // Compute toggle button style
@@ -229,10 +229,11 @@ function DevtoolsPanel({
           ...(position === "left"   ? { top: 0, bottom: 0, left: 0, width: panelSize } : {}),
           ...(position === "right"  ? { top: 0, bottom: 0, right: 0, width: panelSize } : {}),
           zIndex: 999998,
-          boxShadow: "0 0 40px rgba(0,0,0,0.6)",
+          boxShadow: "0 0 32px rgba(0,0,0,0.4)",
           background: colors.bg,
           display: "flex", flexDirection: "column", overflow: "hidden",
-          fontFamily: "'Menlo','Monaco','Consolas',monospace", fontSize: 12, color: colors.text,
+          fontFamily: "-apple-system,BlinkMacSystemFont,'Segoe UI','Roboto','Oxygen','Ubuntu','Cantarell','Fira Sans','Droid Sans','Helvetica Neue',sans-serif",
+          fontSize: 13, color: colors.text,
           borderTop:    position === "bottom" ? `1px solid ${colors.border}` : undefined,
           borderBottom: position === "top"    ? `1px solid ${colors.border}` : undefined,
           borderRight:  position === "left"   ? `1px solid ${colors.border}` : undefined,
@@ -272,10 +273,11 @@ function DevtoolsPanel({
           ...floatingPanelStyle(btnSnap, position),
           background: colors.bg,
           border: `1px solid ${colors.border}`,
-          borderRadius: 10,
-          boxShadow: "0 8px 32px rgba(0,0,0,0.5)",
+          borderRadius: 12,
+          boxShadow: "0 16px 48px rgba(0,0,0,0.5)",
           display: "flex", flexDirection: "column", overflow: "hidden",
-          fontFamily: "'Menlo','Monaco','Consolas',monospace", fontSize: 12, color: colors.text,
+          fontFamily: "-apple-system,BlinkMacSystemFont,'Segoe UI','Roboto','Oxygen','Ubuntu','Cantarell','Fira Sans','Droid Sans','Helvetica Neue',sans-serif",
+          fontSize: 13, color: colors.text,
         }}>
           <PanelContent
             colors={colors}
@@ -303,15 +305,17 @@ function DevtoolsPanel({
         style={{
           ...toggleBtnStyle,
           padding: "8px 14px 8px 10px",
-          background: open ? "#161b22" : "#0d1117",
+          background: open ? "rgba(25, 25, 63, 0.8)" : "rgba(10, 14, 39, 0.8)",
+          backdropFilter: "blur(8px)",
           borderRadius: 9999,
-          border: "1px solid rgba(255,255,255,0.12)",
-          boxShadow: "0 4px 16px rgba(0,0,0,0.5)",
+          border: "1px solid rgba(99,102,241,0.3)",
+          boxShadow: "0 8px 24px rgba(0,0,0,0.4)",
           display: "flex",
           alignItems: "center",
           gap: 8,
           userSelect: "none",
           cursor: liveDragXY ? "grabbing" : "grab",
+          transition: "all 0.2s ease",
         }}
         title="Drag to move · Click to toggle"
       >
@@ -323,7 +327,7 @@ function DevtoolsPanel({
           <path d="M115.75 52C114.839 52 114.1 51.2613 114.1 50.35V17C114.1 15.8954 114.995 15 116.1 15H119.95C121.055 15 121.95 15.8954 121.95 17V30.4151C121.95 30.6767 121.788 30.9109 121.543 31.0027C121.055 31.1855 120.589 30.734 120.821 30.2681C121.191 29.5279 121.684 28.8385 122.3 28.2C123.267 27.2 124.417 26.4 125.75 25.8C127.083 25.2 128.483 24.9 129.95 24.9C131.95 24.9 133.633 25.3167 135 26.15C136.367 26.95 137.4 28.1667 138.1 29.8C138.8 31.4 139.15 33.3667 139.15 35.7V50C139.15 51.1046 138.255 52 137.15 52H133.1C131.995 52 131.1 51.1046 131.1 50V36.35C131.1 35.2833 130.95 34.4 130.65 33.7C130.35 33 129.883 32.4833 129.25 32.15C128.65 31.7833 127.9 31.6167 127 31.65C126.3 31.65 125.65 31.7667 125.05 32C124.45 32.2 123.933 32.5167 123.5 32.95C123.067 33.35 122.717 33.8167 122.45 34.35C122.217 34.8833 122.1 35.4667 122.1 36.1V50C122.1 51.1046 121.205 52 120.1 52H118.15C117.217 52 116.417 52 115.75 52Z" fill="white"/>
         </svg>
         {entries.length > 0 && (
-          <span style={{ background: "rgba(88,166,255,0.15)", color: "#58a6ff", border: "1px solid rgba(88,166,255,0.3)", borderRadius: 9999, padding: "1px 7px", fontSize: 10, fontFamily: "monospace", fontWeight: 600 }}>
+          <span style={{ background: "rgba(99,102,241,0.2)", color: "#a78bfa", border: "1px solid rgba(167,139,250,0.3)", borderRadius: 9999, padding: "2px 8px", fontSize: 11, fontWeight: 600 }}>
             {entries.length}
           </span>
         )}
@@ -351,33 +355,38 @@ function PanelContent({ colors, entries, selected, setSelected, sel, onClear, on
   return (
     <>
       {/* Header */}
-      <div style={{ background: colors.bg2, borderBottom: `1px solid ${colors.border}`, padding: "10px 14px", display: "flex", alignItems: "center", gap: 12, flexShrink: 0 }}>
-        <span style={{ fontSize: 13, fontWeight: 700, letterSpacing: 0.5 }}>🛡️ Ciph Inspector</span>
-        <span style={{ fontSize: 10, background: colors.bg3, border: `1px solid ${colors.border}`, borderRadius: 10, padding: "2px 8px", color: colors.text2 }}>
-          {entries.length} request{entries.length !== 1 ? "s" : ""}
+      <div style={{ background: `linear-gradient(135deg, ${colors.bg2} 0%, ${colors.bg3} 100%)`, borderBottom: `1px solid ${colors.border}`, padding: "14px 16px", display: "flex", alignItems: "center", gap: 12, flexShrink: 0 }}>
+        <span style={{ fontSize: 14, fontWeight: 700, letterSpacing: "-0.5px", background: "linear-gradient(135deg, #60a5fa, #a78bfa)", WebkitBackgroundClip: "text", WebkitTextFillColor: "transparent", backgroundClip: "text" }}>🛡️ Ciph</span>
+        <span style={{ fontSize: 11, background: colors.bg3, border: `1px solid ${colors.border}`, borderRadius: 10, padding: "3px 8px", color: colors.text2, fontWeight: 500 }}>
+          {entries.length} {entries.length === 1 ? "request" : "requests"}
         </span>
-        <span style={{ fontSize: 10, color: colors.text2, background: "#0d2010", border: "1px solid #3fb95033", borderRadius: 6, padding: "2px 6px" }}>client-only ✦</span>
+        <span style={{ fontSize: 10, color: colors.text2, background: "rgba(99,102,241,0.1)", border: `1px solid ${colors.border}`, borderRadius: 6, padding: "3px 7px", fontWeight: 500 }}>client</span>
         <div style={{ flex: 1 }} />
         <button
           onClick={onClear}
-          style={{ padding: "3px 10px", borderRadius: 6, border: `1px solid ${colors.border}`, background: colors.bg3, color: colors.text2, cursor: "pointer", fontSize: 11, fontFamily: "inherit" }}
+          style={{ padding: "6px 12px", borderRadius: 8, border: `1px solid ${colors.border}`, background: colors.bg3, color: colors.text2, cursor: "pointer", fontSize: 12, fontFamily: "inherit", fontWeight: 500, transition: "all 0.2s ease" }}
+          onMouseEnter={(e) => { e.currentTarget.style.color = colors.text; e.currentTarget.style.borderColor = "#6366f1" }}
+          onMouseLeave={(e) => { e.currentTarget.style.color = colors.text2; e.currentTarget.style.borderColor = colors.border }}
         >Clear</button>
         <button
           onClick={onClose}
-          style={{ padding: "3px 8px", borderRadius: 6, border: `1px solid ${colors.border}`, background: colors.bg3, color: colors.text2, cursor: "pointer", fontSize: 11, fontFamily: "inherit" }}
+          style={{ padding: "6px 10px", borderRadius: 8, border: `1px solid ${colors.border}`, background: colors.bg3, color: colors.text2, cursor: "pointer", fontSize: 12, fontFamily: "inherit", fontWeight: 500, transition: "all 0.2s ease" }}
+          onMouseEnter={(e) => { e.currentTarget.style.color = colors.text; e.currentTarget.style.borderColor = "#f87171" }}
+          onMouseLeave={(e) => { e.currentTarget.style.color = colors.text2; e.currentTarget.style.borderColor = colors.border }}
         >✕</button>
       </div>
 
       {/* Body */}
       <div style={{ display: "flex", flex: 1, overflow: "hidden" }}>
         {/* Log list */}
-        <div style={{ width: 300, borderRight: `1px solid ${colors.border}`, overflowY: "auto", flexShrink: 0 }}>
-          <div style={{ position: "sticky", top: 0, background: colors.bg2, borderBottom: `1px solid ${colors.border}`, padding: "6px 10px", display: "grid", gridTemplateColumns: "52px 1fr 44px 42px", gap: 6, color: colors.text2, fontSize: 10, textTransform: "uppercase", letterSpacing: 0.5 }}>
-            <span>Method</span><span>Route</span><span>Status</span><span>ms</span>
+        <div style={{ width: "480px", borderRight: `1px solid ${colors.border}`, overflowY: "auto", flexShrink: 0 }}>
+          <div style={{ position: "sticky", top: 0, background: colors.bg2, borderBottom: `1px solid ${colors.border}`, padding: "8px 14px", display: "flex", alignItems: "center", gap: "12px", color: colors.text2, fontSize: "10px", textTransform: "uppercase", letterSpacing: "0.5px", fontWeight: 600 }}>
+            <span style={{ minWidth: "60px" }}>Method</span><span style={{ flex: 1, minWidth: "200px" }}>Route</span><span style={{ minWidth: "50px", textAlign: "center" }}>Status</span><span style={{ minWidth: "50px", textAlign: "right" }}>Time</span>
           </div>
           {entries.length === 0 && (
-            <div style={{ padding: 20, color: colors.text2, fontSize: 12, textAlign: "center" }}>
-              No requests yet.<br />Make an API call to see logs.
+            <div style={{ padding: 24, color: colors.text2, fontSize: 13, textAlign: "center", display: "flex", flexDirection: "column", alignItems: "center", gap: 8 }}>
+              <div style={{ opacity: 0.5, fontSize: 24 }}>○</div>
+              <div>No requests yet.<br /><span style={{ fontSize: 11, color: colors.text2, opacity: 0.7 }}>Make an API call to see logs</span></div>
             </div>
           )}
           {entries.map((e, i) => {
@@ -388,25 +397,27 @@ function PanelContent({ colors, entries, selected, setSelected, sel, onClear, on
                 key={e.id}
                 onClick={() => setSelected(i)}
                 style={{
-                  padding: "7px 10px",
-                  display: "grid",
-                  gridTemplateColumns: "52px 1fr 44px 42px",
-                  gap: 6,
-                  borderBottom: `1px solid ${colors.border}`,
-                  borderLeft: `2px solid ${isSel ? "#58a6ff" : e.log.status >= 400 ? "#f85149" : "transparent"}`,
-                  cursor: "pointer",
-                  background: isSel ? colors.bg3 : "transparent",
+                  padding: "11px 14px",
+                  display: "flex",
                   alignItems: "center",
+                  gap: 12,
+                  borderBottom: `1px solid ${colors.border2}`,
+                  borderLeft: `3px solid ${isSel ? "#60a5fa" : e.log.status >= 400 ? (e.log.status >= 500 ? "#f87171" : "#fb923c") : "transparent"}`,
+                  cursor: "pointer",
+                  background: isSel ? colors.bg4 : "transparent",
+                  transition: "all 0.15s ease",
                 }}
+                onMouseEnter={(e) => { if (!isSel) e.currentTarget.style.background = colors.bg3 }}
+                onMouseLeave={(e) => { if (!isSel) e.currentTarget.style.background = "transparent" }}
               >
-                <span style={{ fontSize: 9, fontWeight: 700, padding: "2px 4px", borderRadius: 4, background: mc.bg, color: mc.text, textAlign: "center" }}>
+                <span style={{ fontSize: 10, fontWeight: 700, padding: "3px 6px", borderRadius: 6, background: mc.bg, color: mc.text, textAlign: "center", minWidth: 60 }}>
                   {e.log.method}
                 </span>
-                <span style={{ overflow: "hidden", textOverflow: "ellipsis", whiteSpace: "nowrap", color: colors.text, fontSize: 11 }}>
+                <span style={{ overflow: "hidden", textOverflow: "ellipsis", whiteSpace: "nowrap", color: colors.text, fontSize: 12, flex: 1, minWidth: 200 }}>
                   {e.log.route}
                 </span>
-                <span style={{ color: statusColor(e.log.status), fontWeight: 600, fontSize: 11 }}>{e.log.status || "…"}</span>
-                <span style={{ color: colors.text2, fontSize: 10 }}>{e.log.duration}ms</span>
+                <span style={{ color: statusColor(e.log.status), fontWeight: 600, fontSize: 12, textAlign: "center", minWidth: 50 }}>{e.log.status || "…"}</span>
+                <span style={{ color: colors.text2, fontSize: 12, textAlign: "right", minWidth: 50 }}>{e.log.duration}ms</span>
               </div>
             )
           })}
