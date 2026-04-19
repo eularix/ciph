@@ -1,6 +1,6 @@
 <?xml version="1.0" encoding="UTF-8"?>
-<coverage generated="1776591902137" clover="3.2.0">
-  <project timestamp="1776591902137" name="All files">
+<coverage generated="1776592192834" clover="3.2.0">
+  <project timestamp="1776592192834" name="All files">
     <metrics statements="456" coveredstatements="235" conditionals="97" coveredconditionals="54" methods="21" coveredmethods="13" elements="574" coveredelements="302" complexity="0" loc="456" ncloc="456" packages="1" files="1" classes="1"/>
     <file name="index.ts" path="/Users/dimasmaulana/Documents/Eularix/open-source/ciph/packages/client/src/index.ts">
       <metrics statements="456" coveredstatements="235" conditionals="97" coveredconditionals="54" methods="21" coveredmethods="13"/>
