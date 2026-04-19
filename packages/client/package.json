@@ -22,7 +22,7 @@
     "lint": "echo 'no lint'"
   },
   "peerDependencies": {
-    "@ciph/core": "workspace:*",
+    "@ciph/core": "0.7.0",
     "axios": "^1.0.0"
   },
   "publishConfig": {
