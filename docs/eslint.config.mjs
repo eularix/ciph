@@ -1,33 +1,15 @@
-export default [
-  {
-    ignores: [
-      '.next/**',
-      'out/**',
-      'build/**',
-      'next-env.d.ts',
-      '.source/**',
-      'node_modules/**',
-    ],
-  },
-  {
-    languageOptions: {
-      ecmaVersion: 'latest',
-      sourceType: 'module',
-      globals: {
-        // Browser globals
-        window: 'readonly',
-        document: 'readonly',
-        navigator: 'readonly',
-        console: 'readonly',
-        // Node globals
-        process: 'readonly',
-        global: 'readonly',
-        __dirname: 'readonly',
-        __filename: 'readonly',
-      },
-    },
-    rules: {
-      'no-unused-vars': ['warn', { argsIgnorePattern: '^_' }],
-    },
-  },
-];
+import { defineConfig, globalIgnores } from 'eslint/config';
+import nextVitals from 'eslint-config-next/core-web-vitals';
+
+const eslintConfig = defineConfig([
+  ...nextVitals,
+  globalIgnores([
+    '.next/**',
+    'out/**',
+    'build/**',
+    'next-env.d.ts',
+    '.source/**',
+  ]),
+]);
+
+export default eslintConfig;

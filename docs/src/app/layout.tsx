@@ -9,7 +9,7 @@ const inter = Inter({
 });
 
 export const metadata = {
-  metadataBase: new URL('https://ciph.sh'),
+  metadataBase: new URL('https://ciph.eularix.com'),
   title: {
     default: 'Ciph - Transparent HTTP Encryption',
     template: '%s | Ciph',
@@ -21,7 +21,7 @@ export const metadata = {
   openGraph: {
     type: 'website',
     locale: 'en_US',
-    url: 'https://ciph.sh',
+    url: 'https://ciph.eularix.com',
     title: 'Ciph - Transparent HTTP Encryption',
     description: 'Encrypt request/response bodies. Plain text never visible in Network tab. Your code stays identical.',
     siteName: 'Ciph',

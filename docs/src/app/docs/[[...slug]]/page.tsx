@@ -1,8 +1,17 @@
 import { getPageImage, getPageMarkdownUrl, source } from '@/lib/source';
+import {
+  DocsBody,
+  DocsDescription,
+  DocsPage,
+  DocsTitle,
+  MarkdownCopyButton,
+  ViewOptionsPopover,
+} from 'fumadocs-ui/layouts/docs/page';
 import { notFound } from 'next/navigation';
 import { getMDXComponents } from '@/components/mdx';
 import type { Metadata } from 'next';
 import { createRelativeLink } from 'fumadocs-ui/mdx';
+import { gitConfig } from '@/lib/shared';
 
 export default async function Page(props: PageProps<'/docs/[[...slug]]'>) {
   const params = await props.params;
@@ -10,23 +19,23 @@ export default async function Page(props: PageProps<'/docs/[[...slug]]'>) {
   if (!page) notFound();
 
   const MDX = page.data.body;
+  const markdownUrl = getPageMarkdownUrl(page).url;
 
   return (
-    <div className="flex flex-col gap-4 w-full">
-      <div className="space-y-2">
-        <h1 className="text-3xl sm:text-4xl font-bold mb-2 break-words">{page.data.title}</h1>
-        {page.data.description && (
-          <p className="text-base sm:text-lg text-muted-foreground break-words">{page.data.description}</p>
-        )}
+    <DocsPage toc={page.data.toc} full={page.data.full}>
+      <DocsTitle>{page.data.title}</DocsTitle>
+      <DocsDescription className="mb-0">{page.data.description}</DocsDescription>
+      <div className="flex flex-row gap-2 items-center border-b">
       </div>
-      <article className="prose dark:prose-invert prose-sm sm:prose-base max-w-none overflow-hidden w-full">
+      <DocsBody>
         <MDX
           components={getMDXComponents({
+            // this allows you to link to other pages with relative file paths
             a: createRelativeLink(source, page),
           })}
         />
-      </article>
-    </div>
+      </DocsBody>
+    </DocsPage>
   );
 }
 
@@ -39,38 +48,11 @@ export async function generateMetadata(props: PageProps<'/docs/[[...slug]]'>): P
   const page = source.getPage(params.slug);
   if (!page) notFound();
 
-  const pageImage = getPageImage(page);
-  const pageUrl = `https://ciph.sh/docs/${page.slugs.join('/')}`;
-
   return {
     title: page.data.title,
     description: page.data.description,
-    alternates: {
-      canonical: pageUrl,
-    },
     openGraph: {
-      type: 'article',
-      title: page.data.title,
-      description: page.data.description,
-      url: pageUrl,
-      siteName: 'Ciph',
-      images: [
-        {
-          url: pageImage.url,
-          width: 1200,
-          height: 630,
-          alt: page.data.title,
-          type: 'image/png',
-        },
-      ],
-      locale: 'en_US',
-    },
-    twitter: {
-      card: 'summary_large_image',
-      title: page.data.title,
-      description: page.data.description,
-      images: [pageImage.url],
-      creator: '@eularix',
+      images: getPageImage(page).url,
     },
   };
 }
