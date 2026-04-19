@@ -45,20 +45,20 @@ function mountDevtoolsPanel(options = {}) {
   app.mount(host);
 }
 function statusColor(s) {
-  if (s >= 500) return "#f85149";
-  if (s >= 400) return "#d29922";
-  if (s >= 200) return "#3fb950";
-  return "#8b949e";
+  if (s >= 500) return "#f87171";
+  if (s >= 400) return "#fb923c";
+  if (s >= 200) return "#4ade80";
+  return "#a1a5b7";
 }
 function methodColors(m) {
   const map = {
-    GET: { bg: "#0d1b2e", text: "#58a6ff" },
-    POST: { bg: "#0d2010", text: "#3fb950" },
-    PUT: { bg: "#1e1500", text: "#d29922" },
-    PATCH: { bg: "#1a0d2e", text: "#bc8cff" },
-    DELETE: { bg: "#2e0d0d", text: "#f85149" }
+    GET: { bg: "rgba(96,165,250,0.15)", text: "#60a5fa" },
+    POST: { bg: "rgba(74,222,128,0.15)", text: "#4ade80" },
+    PUT: { bg: "rgba(251,146,60,0.15)", text: "#fb923c" },
+    PATCH: { bg: "rgba(216,180,254,0.15)", text: "#d8b4fe" },
+    DELETE: { bg: "rgba(248,113,113,0.15)", text: "#f87171" }
   };
-  return map[m] ?? { bg: "#1c2230", text: "#8b949e" };
+  return map[m] ?? { bg: "rgba(156,164,200,0.1)", text: "#a1a5b7" };
 }
 function fmtBody(v) {
   if (v === null || v === void 0) return "\u2014";
@@ -95,103 +95,113 @@ function renderPanelInner(c, entries, selected, sel, isRequesting, hasClient, on
   const mc = sel ? methodColors(sel.log.method) : null;
   return (0, import_vue.h)("div", { style: { display: "flex", flexDirection: "column", height: "100%", overflow: "hidden" } }, [
     // Header
-    (0, import_vue.h)("div", { style: { background: c.bg2, borderBottom: `1px solid ${c.border}`, padding: "10px 14px", display: "flex", alignItems: "center", gap: "12px", flexShrink: 0 } }, [
-      (0, import_vue.h)("span", { style: { fontSize: "13px", fontWeight: 700, letterSpacing: "0.5px" } }, "\u{1F6E1}\uFE0F Ciph Inspector"),
+    (0, import_vue.h)("div", { style: { background: `linear-gradient(135deg, ${c.bg2} 0%, ${c.bg3} 100%)`, borderBottom: `1px solid ${c.border}`, padding: "14px 16px", display: "flex", alignItems: "center", gap: "12px", flexShrink: 0 } }, [
+      (0, import_vue.h)("span", { style: { fontSize: "14px", fontWeight: 700, letterSpacing: "-0.5px", background: "linear-gradient(135deg, #60a5fa, #a78bfa)", WebkitBackgroundClip: "text", WebkitTextFillColor: "transparent", backgroundClip: "text" } }, "\u{1F6E1}\uFE0F Ciph"),
       (0, import_vue.h)(
         "span",
-        { style: { fontSize: "10px", background: c.bg3, border: `1px solid ${c.border}`, borderRadius: "10px", padding: "2px 8px", color: c.text2 } },
-        `${entries.length} request${entries.length !== 1 ? "s" : ""}`
+        { style: { fontSize: "11px", background: c.bg3, border: `1px solid ${c.border}`, borderRadius: "10px", padding: "3px 8px", color: c.text2, fontWeight: 500 } },
+        `${entries.length} ${entries.length === 1 ? "request" : "requests"}`
       ),
-      (0, import_vue.h)("span", { style: { fontSize: "10px", color: c.text2, background: "#0d2010", border: "1px solid #3fb95033", borderRadius: "6px", padding: "2px 6px" } }, "vue \u2726"),
+      (0, import_vue.h)("span", { style: { fontSize: "10px", color: c.text2, background: "rgba(99,102,241,0.1)", border: `1px solid ${c.border}`, borderRadius: "6px", padding: "3px 7px", fontWeight: 500 } }, "vue"),
       (0, import_vue.h)("div", { style: { flex: 1 } }),
-      (0, import_vue.h)("button", { onClick: onClear, style: { padding: "3px 10px", borderRadius: "6px", border: `1px solid ${c.border}`, background: c.bg3, color: c.text2, cursor: "pointer", fontSize: "11px", fontFamily: "inherit" } }, "Clear"),
-      (0, import_vue.h)("button", { onClick: onClose, style: { padding: "3px 8px", borderRadius: "6px", border: `1px solid ${c.border}`, background: c.bg3, color: c.text2, cursor: "pointer", fontSize: "11px", fontFamily: "inherit" } }, "\u2715")
+      (0, import_vue.h)("button", { onClick: onClear, style: { padding: "6px 12px", borderRadius: "8px", border: `1px solid ${c.border}`, background: c.bg3, color: c.text2, cursor: "pointer", fontSize: "12px", fontFamily: "inherit", fontWeight: 500, transition: "all 0.2s ease" } }, "Clear"),
+      (0, import_vue.h)("button", { onClick: onClose, style: { padding: "6px 10px", borderRadius: "8px", border: `1px solid ${c.border}`, background: c.bg3, color: c.text2, cursor: "pointer", fontSize: "12px", fontFamily: "inherit", fontWeight: 500, transition: "all 0.2s ease" } }, "\u2715")
     ]),
     // Body row
     (0, import_vue.h)("div", { style: { display: "flex", flex: 1, overflow: "hidden" } }, [
       // Log list
-      (0, import_vue.h)("div", { style: { width: "300px", borderRight: `1px solid ${c.border}`, overflowY: "auto", flexShrink: 0 } }, [
+      (0, import_vue.h)("div", { style: { width: "480px", borderRight: `1px solid ${c.border}`, overflowY: "auto", flexShrink: 0 } }, [
         (0, import_vue.h)(
           "div",
-          { style: { position: "sticky", top: 0, background: c.bg2, borderBottom: `1px solid ${c.border}`, padding: "6px 10px", display: "grid", gridTemplateColumns: "52px 1fr 44px 42px", gap: "6px", color: c.text2, fontSize: "10px", textTransform: "uppercase", letterSpacing: "0.5px" } },
-          [(0, import_vue.h)("span", "Method"), (0, import_vue.h)("span", "Route"), (0, import_vue.h)("span", "Status"), (0, import_vue.h)("span", "ms")]
+          { style: { position: "sticky", top: 0, background: c.bg2, borderBottom: `1px solid ${c.border}`, padding: "8px 14px", display: "flex", alignItems: "center", gap: "12px", color: c.text2, fontSize: "10px", textTransform: "uppercase", letterSpacing: "0.5px", fontWeight: 600 } },
+          [(0, import_vue.h)("span", { style: { minWidth: "60px" } }, "Method"), (0, import_vue.h)("span", { style: { flex: 1, minWidth: "200px" } }, "Route"), (0, import_vue.h)("span", { style: { minWidth: "50px", textAlign: "center" } }, "Status"), (0, import_vue.h)("span", { style: { minWidth: "50px", textAlign: "right" } }, "Time")]
         ),
-        entries.length === 0 ? (0, import_vue.h)("div", { style: { padding: "20px", color: c.text2, fontSize: "12px", textAlign: "center" } }, "No requests yet. Make an API call to see logs.") : entries.map((e, i) => {
+        entries.length === 0 ? (0, import_vue.h)("div", { style: { padding: "24px", color: c.text2, fontSize: "13px", textAlign: "center", display: "flex", flexDirection: "column", alignItems: "center", gap: "8px" } }, [
+          (0, import_vue.h)("div", { style: { opacity: 0.5, fontSize: "24px" } }, "\u25CB"),
+          (0, import_vue.h)("div", [
+            "No requests yet.",
+            (0, import_vue.h)("br"),
+            (0, import_vue.h)("span", { style: { fontSize: "11px", color: c.text2, opacity: 0.7 } }, "Make an API call to see logs")
+          ])
+        ]) : entries.map((e, i) => {
           const em = methodColors(e.log.method);
           return (0, import_vue.h)("div", {
             key: e.id,
             onClick: () => onSelect(i),
             style: {
-              padding: "7px 10px",
-              display: "grid",
-              gridTemplateColumns: "52px 1fr 44px 42px",
-              gap: "6px",
-              borderBottom: `1px solid ${c.border}`,
-              borderLeft: `2px solid ${selected === i ? "#58a6ff" : e.log.status >= 400 ? "#f85149" : "transparent"}`,
+              padding: "11px 14px",
+              display: "flex",
+              alignItems: "center",
+              gap: "12px",
+              borderBottom: `1px solid ${c.border2}`,
+              borderLeft: `3px solid ${selected === i ? "#60a5fa" : e.log.status >= 400 ? e.log.status >= 500 ? "#f87171" : "#fb923c" : "transparent"}`,
               cursor: "pointer",
-              background: selected === i ? c.bg3 : "transparent",
-              alignItems: "center"
+              background: selected === i ? c.bg4 : "transparent",
+              transition: "all 0.15s ease"
             }
           }, [
-            (0, import_vue.h)("span", { style: { fontSize: "9px", fontWeight: 700, padding: "2px 4px", borderRadius: "4px", background: em.bg, color: em.text, textAlign: "center" } }, e.log.method),
-            (0, import_vue.h)("span", { style: { overflow: "hidden", textOverflow: "ellipsis", whiteSpace: "nowrap", color: c.text, fontSize: "11px" } }, e.log.route),
-            (0, import_vue.h)("span", { style: { color: statusColor(e.log.status), fontWeight: 600, fontSize: "11px" } }, e.log.status || "\u2026"),
-            (0, import_vue.h)("span", { style: { color: c.text2, fontSize: "10px" } }, `${e.log.duration}ms`)
+            (0, import_vue.h)("span", { style: { fontSize: "10px", fontWeight: 700, padding: "3px 6px", borderRadius: "6px", background: em.bg, color: em.text, textAlign: "center", minWidth: "60px" } }, e.log.method),
+            (0, import_vue.h)("span", { style: { overflow: "hidden", textOverflow: "ellipsis", whiteSpace: "nowrap", color: c.text, fontSize: "12px", flex: 1, minWidth: "200px" } }, e.log.route),
+            (0, import_vue.h)("span", { style: { color: statusColor(e.log.status), fontWeight: 600, fontSize: "12px", textAlign: "center", minWidth: "50px" } }, String(e.log.status || "\u2026")),
+            (0, import_vue.h)("span", { style: { color: c.text2, fontSize: "12px", textAlign: "right", minWidth: "50px" } }, `${e.log.duration}ms`)
           ]);
         })
       ]),
       // Detail pane
       (0, import_vue.h)(
         "div",
-        { style: { flex: 1, overflowY: "auto", padding: "14px" } },
+        { style: { flex: 1, overflowY: "auto", padding: "20px" } },
         !sel ? [(0, import_vue.h)("div", { style: { display: "flex", alignItems: "center", justifyContent: "center", height: "100%", color: c.text2, fontSize: "13px" } }, "\u2190 Select a request to inspect")] : [
-          (0, import_vue.h)("div", { style: { marginBottom: "14px", paddingBottom: "10px", borderBottom: `1px solid ${c.border}` } }, [
-            (0, import_vue.h)("div", { style: { display: "flex", alignItems: "center", gap: "8px", marginBottom: "4px" } }, [
-              (0, import_vue.h)("span", { style: { fontSize: "10px", fontWeight: 700, padding: "2px 6px", borderRadius: "4px", background: mc.bg, color: mc.text } }, sel.log.method),
-              (0, import_vue.h)("span", { style: { fontWeight: 600, fontSize: "13px" } }, sel.log.route),
-              (0, import_vue.h)("span", { style: { fontWeight: 700, color: statusColor(sel.log.status) } }, sel.log.status || "\u2026"),
+          (0, import_vue.h)("div", { style: { marginBottom: "20px", paddingBottom: "14px", borderBottom: `1px solid ${c.border}` } }, [
+            (0, import_vue.h)("div", { style: { display: "flex", alignItems: "center", gap: "10px", marginBottom: "6px" } }, [
+              (0, import_vue.h)("span", { style: { fontSize: "10px", fontWeight: 700, padding: "3px 6px", borderRadius: "6px", background: mc.bg, color: mc.text } }, sel.log.method),
+              (0, import_vue.h)("span", { style: { fontWeight: 700, fontSize: "14px" } }, sel.log.route),
+              (0, import_vue.h)("span", { style: { fontWeight: 700, color: statusColor(sel.log.status) } }, String(sel.log.status || "\u2026")),
               (0, import_vue.h)(
                 "span",
-                { style: { fontSize: "10px", padding: "2px 6px", borderRadius: "4px", background: sel.log.excluded ? c.bg3 : "#0d1b2e", color: sel.log.excluded ? c.text2 : "#58a6ff" } },
-                sel.log.excluded ? "\u25CB Plain" : "\u{1F512} Encrypted"
+                { style: { fontSize: "10px", padding: "3px 8px", borderRadius: "6px", background: sel.log.excluded ? "rgba(156,164,200,0.1)" : "rgba(96,165,250,0.15)", color: sel.log.excluded ? c.text2 : "#60a5fa", fontWeight: 600 } },
+                sel.log.excluded ? "\u25CB Passthrough" : "\u{1F512} Encrypted"
               ),
               hasClient ? (0, import_vue.h)("button", {
                 disabled: isRequesting,
                 onClick: onReRequest,
-                style: { marginLeft: "auto", padding: "3px 10px", borderRadius: "6px", border: `1px solid ${c.border}`, background: isRequesting ? c.bg2 : "#0d2010", color: isRequesting ? c.text2 : "#3fb950", cursor: isRequesting ? "not-allowed" : "pointer", fontSize: "11px", fontFamily: "inherit" }
+                style: { marginLeft: "auto", padding: "6px 12px", borderRadius: "8px", border: `1px solid ${c.border}`, background: isRequesting ? c.bg2 : "rgba(74,222,128,0.1)", color: isRequesting ? c.text2 : "#4ade80", cursor: isRequesting ? "not-allowed" : "pointer", fontSize: "12px", fontFamily: "inherit", fontWeight: 500 }
               }, isRequesting ? "Sending..." : "\u21BB Re-request") : null
             ]),
-            (0, import_vue.h)("div", { style: { color: c.text2, fontSize: "10px", display: "flex", gap: "12px" } }, [
+            (0, import_vue.h)("div", { style: { color: c.text2, fontSize: "11px", display: "flex", gap: "14px", flexWrap: "wrap" } }, [
               (0, import_vue.h)("span", sel.log.timestamp),
-              (0, import_vue.h)("span", `${sel.log.duration}ms`),
-              (0, import_vue.h)("span", `fp: ${sel.log.fingerprint.value ? sel.log.fingerprint.value.slice(0, 12) + "\u2026" : "\u2014"}`)
+              (0, import_vue.h)("span", `Duration: ${sel.log.duration}ms`),
+              sel.log.fingerprint.value ? (0, import_vue.h)("span", `Hash: ${sel.log.fingerprint.value.slice(0, 12)}\u2026`) : null
             ])
           ]),
           (0, import_vue.h)(
             "div",
-            { style: { display: "grid", gridTemplateColumns: "1fr 1fr", gap: "12px", marginBottom: "12px" } },
+            { style: { display: "grid", gridTemplateColumns: "1fr 1fr", gap: "16px", marginBottom: "20px" } },
             detailPairs.map(
               ([label, content]) => (0, import_vue.h)("div", { key: label }, [
-                (0, import_vue.h)("div", { style: { fontSize: "10px", color: c.text2, textTransform: "uppercase", letterSpacing: "0.5px", marginBottom: "6px" } }, label),
+                (0, import_vue.h)("div", { style: { fontSize: "10px", color: "#6366f1", textTransform: "uppercase", letterSpacing: "0.5px", marginBottom: "8px", fontWeight: 700 } }, label.includes("Request") ? "\u{1F513} Request Data" : "\u{1F513} Response Data"),
                 (0, import_vue.h)(
                   "div",
-                  { style: { background: c.bg2, border: `1px solid ${c.border}`, borderRadius: "6px", padding: "10px", overflowX: "auto" } },
-                  (0, import_vue.h)("pre", { style: { margin: 0, color: c.text, fontSize: "11px", lineHeight: "1.6", whiteSpace: "pre-wrap", wordBreak: "break-all" } }, content)
+                  { style: { background: c.bg2, border: `1px solid ${c.border}`, borderRadius: "10px", padding: "12px", overflowX: "auto" } },
+                  (0, import_vue.h)("pre", { style: { margin: 0, color: c.text, fontSize: "12px", lineHeight: "1.6", whiteSpace: "pre-wrap", wordBreak: "break-all" } }, content)
                 )
               ])
             )
           ),
           (0, import_vue.h)(
             "div",
-            { style: { display: "grid", gridTemplateColumns: "1fr 1fr", gap: "12px" } },
+            { style: { display: "grid", gridTemplateColumns: "1fr 1fr", gap: "16px" } },
             encPairs.map(
               ([label, content]) => (0, import_vue.h)("div", { key: label }, [
-                (0, import_vue.h)("div", { style: { fontSize: "10px", color: c.text2, textTransform: "uppercase", letterSpacing: "0.5px", marginBottom: "6px" } }, label),
-                (0, import_vue.h)(
-                  "div",
-                  { style: { background: c.bg2, border: `1px solid ${c.border}`, borderRadius: "6px", padding: "10px", overflowX: "auto" } },
-                  (0, import_vue.h)("pre", { style: { margin: 0, color: c.text2, fontSize: "11px", lineHeight: "1.6", whiteSpace: "pre-wrap", wordBreak: "break-all" } }, content)
-                )
+                (0, import_vue.h)("div", { style: { fontSize: "10px", color: "#60a5fa", textTransform: "uppercase", letterSpacing: "0.5px", marginBottom: "8px", fontWeight: 700 } }, label.includes("Request") ? "\u{1F510} Request Encrypted" : "\u{1F510} Response Encrypted"),
+                (0, import_vue.h)("div", { style: { background: c.bg2, border: `1px solid ${c.border}`, borderRadius: "10px", padding: "12px", overflowX: "auto", display: "flex", justifyContent: "space-between", alignItems: "flex-start", gap: "8px" } }, [
+                  (0, import_vue.h)("pre", { style: { margin: 0, color: c.text2, fontSize: "12px", lineHeight: "1.6", whiteSpace: "pre-wrap", wordBreak: "break-all", flex: 1 } }, content),
+                  (0, import_vue.h)("button", {
+                    onClick: () => navigator.clipboard.writeText(content).catch(() => {
+                    }),
+                    style: { padding: "6px 10px", borderRadius: "6px", border: `1px solid ${c.border}`, background: c.bg3, color: c.text2, cursor: "pointer", fontSize: "11px", fontFamily: "inherit", fontWeight: 500, whiteSpace: "nowrap", flexShrink: 0 }
+                  }, "\u{1F4CB} Copy")
+                ])
               ])
             )
           )
@@ -207,12 +217,14 @@ var init_CiphDevtoolsPanel = __esm({
     import_vue = require("vue");
     _mounted = false;
     COLORS = {
-      bg: "#0f1117",
-      bg2: "#161b22",
-      bg3: "#1c2230",
-      border: "#30363d",
-      text: "#e6edf3",
-      text2: "#8b949e"
+      bg: "#0a0e27",
+      bg2: "#0f1423",
+      bg3: "#151b3a",
+      bg4: "#1a1f4f",
+      border: "#2d3e7a",
+      border2: "#1a2555",
+      text: "#f0f4ff",
+      text2: "#9ca4c8"
     };
     DevtoolsPanelComponent = (0, import_vue.defineComponent)({
       name: "CiphDevtoolsPanel",

@@ -2,9 +2,17 @@
 title: Hono
 ---
 
-Hono middleware — decrypts incoming requests, encrypts outgoing responses.
+Server-side encryption middleware for Hono. Automatically decrypts incoming requests and encrypts outgoing responses — zero changes to your handler logic.
 
-## Setup
+## Quick Start
+
+Install the package:
+
+```bash
+bun add @ciph/hono @ciph/core hono
+```
+
+Mount the middleware in your Hono app:
 
 ```ts
 import { Hono } from "hono"
@@ -12,27 +20,101 @@ import { ciph } from "@ciph/hono"
 
 const app = new Hono()
 
+// Mount once at app root — all routes below are encrypted
 app.use("*", ciph({
   secret: process.env.CIPH_SECRET!,
 }))
 
-app.post("/users", async (c) => {
-  // c.req.json() = plain object (auto-decrypted)
-  const user = await db.users.create(c.req.json())
-  return c.json(user) // auto-encrypted
+// Your handlers work unchanged
+app.post("/api/users", async (c) => {
+  // Request body is auto-decrypted
+  const data = await c.req.json()
+  
+  // Store user
+  const user = await db.users.create(data)
+  
+  // Response body is auto-encrypted
+  return c.json(user)
 })
 ```
 
-## Exclude Routes
+<Callout type="info">
+The shared secret must match your frontend `CIPH_SECRET` exactly. Store it in environment variables, never in code.
+</Callout>
+
+## Configuration
+
+### Full Config Options
+
+```ts
+interface CiphConfig {
+  /** Shared secret (required). Same as CIPH_SECRET on frontend. */
+  secret: string
+
+  /** Routes to skip encryption. Default: ["/health", "/ciph", "/ciph/*"] */
+  excludeRoutes?: string[]
+
+  /** Validate IP address in fingerprint. Default: true */
+  strictFingerprint?: boolean
+
+  /** Max payload size in bytes. Default: 10 MB */
+  maxPayloadSize?: number
+
+  /** Allow unencrypted requests (migration mode). Default: false */
+  allowUnencrypted?: boolean
+}
+```
+
+### Example: Development Setup
+
+```ts
+app.use("*", ciph({
+  secret: process.env.CIPH_SECRET!,
+  // Disable IP validation behind proxy
+  strictFingerprint: false,
+  // Increase payload limit for file uploads
+  maxPayloadSize: 50 * 1024 * 1024, // 50 MB
+}))
+```
+
+## Excluding Routes
+
+Skip encryption for specific routes using exact matches or glob patterns:
 
 ```ts
 ciph({
   secret: process.env.CIPH_SECRET!,
-  excludeRoutes: ["/health", "/public/*"]
+  excludeRoutes: [
+    "/health",        // Health checks
+    "/status",        // Status endpoints
+    "/public/*",      // Public resources
+    "/webhooks/*",    // Third-party webhooks
+  ]
 })
 ```
 
-## Devtools Server
+<Callout type="warning">
+Excluded routes must not process sensitive data. They bypass encryption entirely.
+</Callout>
+
+### Per-Route Exclusion
+
+Exclude a single route from encryption:
+
+```ts
+import { ciphExclude } from "@ciph/hono"
+
+app.post("/webhooks/stripe", ciphExclude(), async (c) => {
+  // This handler receives unencrypted body
+  const event = await c.req.json()
+  await processStripeWebhook(event)
+  return c.json({ ok: true })
+})
+```
+
+## DevTools Inspector
+
+Mount the backend inspector to debug encrypted traffic in real-time:
 
 ```ts
 import { ciphDevServer } from "@ciph/devtools-server"
@@ -42,4 +124,152 @@ app.route("/ciph", ciphDevServer({
 }))
 ```
 
-Open `http://localhost:3000/ciph` for inspector.
+Then open `http://localhost:3000/ciph` in your browser to inspect all encrypted requests/responses.
+
+<Callout type="tip">
+DevTools are automatically disabled in production regardless of configuration.
+</Callout>
+
+## How It Works
+
+### Request Flow (Decryption)
+
+1. **Read X-Fingerprint header** from client
+2. **Decrypt fingerprint** using shared secret
+3. **Validate fingerprint** — check IP & user agent match
+4. **Derive AES key** from secret + fingerprint
+5. **Decrypt body** using key
+6. **Inject plain body** into `c.req` for handler
+
+### Response Flow (Encryption)
+
+1. **Intercept response** before sending
+2. **Serialize response** body to JSON/Buffer
+3. **Encrypt body** using same derived key
+4. **Send ciphertext** with `Content-Type: text/plain`
+
+## Error Codes
+
+| Code | HTTP | Meaning |
+|------|------|---------|
+| **CIPH001** | 401 | Missing `X-Fingerprint` header |
+| **CIPH002** | 401 | Fingerprint decryption failed (wrong secret) |
+| **CIPH003** | 401 | Fingerprint mismatch (IP/UA changed) — client will auto-retry |
+| **CIPH004** | 400 | Request body decryption failed (tampering) |
+| **CIPH005** | 413 | Payload exceeds `maxPayloadSize` |
+| **CIPH006** | 500 | Response encryption failed |
+
+Response error format:
+
+```json
+{
+  "code": "CIPH003",
+  "message": "Fingerprint mismatch: IP address changed"
+}
+```
+
+<Callout type="tip">
+Always log these errors for debugging. Enable verbose logging in development.
+</Callout>
+
+## Best Practices
+
+### 1. Environment Variables
+
+```bash
+# .env.local
+CIPH_SECRET=<32+ character random string>
+```
+
+Generate a strong secret:
+
+```bash
+openssl rand -base64 32
+```
+
+### 2. Behind a Proxy
+
+If running behind a proxy/CDN, disable IP validation:
+
+```ts
+ciph({
+  secret: process.env.CIPH_SECRET!,
+  strictFingerprint: false, // Trust X-Forwarded-For headers
+})
+```
+
+### 3. Exclude Health Checks
+
+Always exclude health/ping routes to prevent unnecessary overhead:
+
+```ts
+ciph({
+  secret: process.env.CIPH_SECRET!,
+  excludeRoutes: ["/health"]
+})
+```
+
+### 4. Handle Migration
+
+During gradual rollout, allow unencrypted requests:
+
+```ts
+ciph({
+  secret: process.env.CIPH_SECRET!,
+  allowUnencrypted: true, // Accept both encrypted and plain
+})
+```
+
+<Callout type="warning">
+Only enable `allowUnencrypted` during migration. Always disable in production.
+</Callout>
+
+## TypeScript Support
+
+Full type safety for encrypted handlers:
+
+```ts
+import type { HonoRequest, Context } from "hono"
+
+type AppContext = {
+  Variables: {
+    ciphData: Record<string, unknown>
+  }
+}
+
+const app = new Hono<AppContext>()
+
+app.use("*", ciph({ secret: process.env.CIPH_SECRET! }))
+
+app.post("/api/data", async (c) => {
+  // Fully typed
+  const data: Record<string, unknown> = await c.req.json()
+  return c.json({ success: true, data })
+})
+```
+
+## Common Issues
+
+### "Fingerprint mismatch" Errors
+
+**Cause:** User IP or user agent changed (network change, VPN, incognito mode)
+
+**Solution:** Client automatically retries with fresh fingerprint. If persistent:
+- Check `strictFingerprint` setting
+- Verify proxy headers are forwarded correctly
+
+### "CIPH004: Decrypt failed"
+
+**Cause:** Request body is corrupted or secret mismatch
+
+**Solution:**
+- Verify frontend & backend use same `CIPH_SECRET`
+- Check network for data corruption
+- Review frontend encryption logs
+
+### Performance
+
+Encryption adds minimal overhead (~1-2ms per request). For high-throughput scenarios, consider:
+- Excluding static/health routes
+- Using response caching
+- Profiling with DevTools inspector

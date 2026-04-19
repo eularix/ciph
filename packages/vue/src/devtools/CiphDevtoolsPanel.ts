@@ -42,28 +42,28 @@ interface BtnSnap { side: EdgeSide; offset: number }
 
 type Colors = typeof COLORS
 const COLORS = {
-  bg: "#0f1117", bg2: "#161b22", bg3: "#1c2230",
-  border: "#30363d", text: "#e6edf3", text2: "#8b949e",
+  bg: "#0a0e27", bg2: "#0f1423", bg3: "#151b3a", bg4: "#1a1f4f",
+  border: "#2d3e7a", border2: "#1a2555", text: "#f0f4ff", text2: "#9ca4c8",
 }
 
 // ─── Helpers ──────────────────────────────────────────────────────────────────
 
 function statusColor(s: number): string {
-  if (s >= 500) return "#f85149"
-  if (s >= 400) return "#d29922"
-  if (s >= 200) return "#3fb950"
-  return "#8b949e"
+  if (s >= 500) return "#f87171"
+  if (s >= 400) return "#fb923c"
+  if (s >= 200) return "#4ade80"
+  return "#a1a5b7"
 }
 
 function methodColors(m: string): { bg: string; text: string } {
   const map: Record<string, { bg: string; text: string }> = {
-    GET:    { bg: "#0d1b2e", text: "#58a6ff" },
-    POST:   { bg: "#0d2010", text: "#3fb950" },
-    PUT:    { bg: "#1e1500", text: "#d29922" },
-    PATCH:  { bg: "#1a0d2e", text: "#bc8cff" },
-    DELETE: { bg: "#2e0d0d", text: "#f85149" },
+    GET:    { bg: "rgba(96,165,250,0.15)", text: "#60a5fa" },
+    POST:   { bg: "rgba(74,222,128,0.15)", text: "#4ade80" },
+    PUT:    { bg: "rgba(251,146,60,0.15)", text: "#fb923c" },
+    PATCH:  { bg: "rgba(216,180,254,0.15)", text: "#d8b4fe" },
+    DELETE: { bg: "rgba(248,113,113,0.15)", text: "#f87171" },
   }
-  return map[m] ?? { bg: "#1c2230", text: "#8b949e" }
+  return map[m] ?? { bg: "rgba(156,164,200,0.1)", text: "#a1a5b7" }
 }
 
 function fmtBody(v: unknown): string {
@@ -116,82 +116,95 @@ function renderPanelInner(
 
   return h("div", { style: { display: "flex", flexDirection: "column", height: "100%", overflow: "hidden" } }, [
     // Header
-    h("div", { style: { background: c.bg2, borderBottom: `1px solid ${c.border}`, padding: "10px 14px", display: "flex", alignItems: "center", gap: "12px", flexShrink: 0 } as CSSProperties }, [
-      h("span", { style: { fontSize: "13px", fontWeight: 700, letterSpacing: "0.5px" } }, "🛡️ Ciph Inspector"),
-      h("span", { style: { fontSize: "10px", background: c.bg3, border: `1px solid ${c.border}`, borderRadius: "10px", padding: "2px 8px", color: c.text2 } as CSSProperties },
-        `${entries.length} request${entries.length !== 1 ? "s" : ""}`),
-      h("span", { style: { fontSize: "10px", color: c.text2, background: "#0d2010", border: "1px solid #3fb95033", borderRadius: "6px", padding: "2px 6px" } as CSSProperties }, "vue ✦"),
+    h("div", { style: { background: `linear-gradient(135deg, ${c.bg2} 0%, ${c.bg3} 100%)`, borderBottom: `1px solid ${c.border}`, padding: "14px 16px", display: "flex", alignItems: "center", gap: "12px", flexShrink: 0 } as CSSProperties }, [
+      h("span", { style: { fontSize: "14px", fontWeight: 700, letterSpacing: "-0.5px", background: "linear-gradient(135deg, #60a5fa, #a78bfa)", WebkitBackgroundClip: "text", WebkitTextFillColor: "transparent", backgroundClip: "text" } }, "🛡️ Ciph"),
+      h("span", { style: { fontSize: "11px", background: c.bg3, border: `1px solid ${c.border}`, borderRadius: "10px", padding: "3px 8px", color: c.text2, fontWeight: 500 } as CSSProperties },
+        `${entries.length} ${entries.length === 1 ? "request" : "requests"}`),
+      h("span", { style: { fontSize: "10px", color: c.text2, background: "rgba(99,102,241,0.1)", border: `1px solid ${c.border}`, borderRadius: "6px", padding: "3px 7px", fontWeight: 500 } as CSSProperties }, "vue"),
       h("div", { style: { flex: 1 } }),
-      h("button", { onClick: onClear, style: { padding: "3px 10px", borderRadius: "6px", border: `1px solid ${c.border}`, background: c.bg3, color: c.text2, cursor: "pointer", fontSize: "11px", fontFamily: "inherit" } as CSSProperties }, "Clear"),
-      h("button", { onClick: onClose, style: { padding: "3px 8px", borderRadius: "6px", border: `1px solid ${c.border}`, background: c.bg3, color: c.text2, cursor: "pointer", fontSize: "11px", fontFamily: "inherit" } as CSSProperties }, "✕"),
+      h("button", { onClick: onClear, style: { padding: "6px 12px", borderRadius: "8px", border: `1px solid ${c.border}`, background: c.bg3, color: c.text2, cursor: "pointer", fontSize: "12px", fontFamily: "inherit", fontWeight: 500, transition: "all 0.2s ease" } as CSSProperties }, "Clear"),
+      h("button", { onClick: onClose, style: { padding: "6px 10px", borderRadius: "8px", border: `1px solid ${c.border}`, background: c.bg3, color: c.text2, cursor: "pointer", fontSize: "12px", fontFamily: "inherit", fontWeight: 500, transition: "all 0.2s ease" } as CSSProperties }, "✕"),
     ]),
     // Body row
     h("div", { style: { display: "flex", flex: 1, overflow: "hidden" } }, [
       // Log list
-      h("div", { style: { width: "300px", borderRight: `1px solid ${c.border}`, overflowY: "auto", flexShrink: 0 } as CSSProperties }, [
-        h("div", { style: { position: "sticky", top: 0, background: c.bg2, borderBottom: `1px solid ${c.border}`, padding: "6px 10px", display: "grid", gridTemplateColumns: "52px 1fr 44px 42px", gap: "6px", color: c.text2, fontSize: "10px", textTransform: "uppercase", letterSpacing: "0.5px" } as CSSProperties },
-          [h("span", "Method"), h("span", "Route"), h("span", "Status"), h("span", "ms")]),
+      h("div", { style: { width: "480px", borderRight: `1px solid ${c.border}`, overflowY: "auto", flexShrink: 0 } as CSSProperties }, [
+        h("div", { style: { position: "sticky", top: 0, background: c.bg2, borderBottom: `1px solid ${c.border}`, padding: "8px 14px", display: "flex", alignItems: "center", gap: "12px", color: c.text2, fontSize: "10px", textTransform: "uppercase", letterSpacing: "0.5px", fontWeight: 600 } as CSSProperties },
+          [h("span", { style: { minWidth: "60px" } }, "Method"), h("span", { style: { flex: 1, minWidth: "200px" } }, "Route"), h("span", { style: { minWidth: "50px", textAlign: "center" } }, "Status"), h("span", { style: { minWidth: "50px", textAlign: "right" } }, "Time")]),
         entries.length === 0
-          ? h("div", { style: { padding: "20px", color: c.text2, fontSize: "12px", textAlign: "center" } as CSSProperties }, "No requests yet. Make an API call to see logs.")
+          ? h("div", { style: { padding: "24px", color: c.text2, fontSize: "13px", textAlign: "center", display: "flex", flexDirection: "column", alignItems: "center", gap: "8px" } as CSSProperties }, [
+              h("div", { style: { opacity: 0.5, fontSize: "24px" } }, "○"),
+              h("div", [
+                "No requests yet.",
+                h("br"),
+                h("span", { style: { fontSize: "11px", color: c.text2, opacity: 0.7 } }, "Make an API call to see logs"),
+              ]),
+            ])
           : entries.map((e, i) => {
               const em = methodColors(e.log.method)
               return h("div", {
                 key: e.id,
                 onClick: () => onSelect(i),
                 style: {
-                  padding: "7px 10px", display: "grid", gridTemplateColumns: "52px 1fr 44px 42px",
-                  gap: "6px", borderBottom: `1px solid ${c.border}`,
-                  borderLeft: `2px solid ${selected === i ? "#58a6ff" : e.log.status >= 400 ? "#f85149" : "transparent"}`,
-                  cursor: "pointer", background: selected === i ? c.bg3 : "transparent", alignItems: "center",
+                  padding: "11px 14px", display: "flex", alignItems: "center",
+                  gap: "12px", borderBottom: `1px solid ${c.border2}`,
+                  borderLeft: `3px solid ${selected === i ? "#60a5fa" : e.log.status >= 400 ? (e.log.status >= 500 ? "#f87171" : "#fb923c") : "transparent"}`,
+                  cursor: "pointer", background: selected === i ? c.bg4 : "transparent",
+                  transition: "all 0.15s ease",
                 } as CSSProperties,
               }, [
-                h("span", { style: { fontSize: "9px", fontWeight: 700, padding: "2px 4px", borderRadius: "4px", background: em.bg, color: em.text, textAlign: "center" } as CSSProperties }, e.log.method),
-                h("span", { style: { overflow: "hidden", textOverflow: "ellipsis", whiteSpace: "nowrap", color: c.text, fontSize: "11px" } as CSSProperties }, e.log.route),
-                h("span", { style: { color: statusColor(e.log.status), fontWeight: 600, fontSize: "11px" } as CSSProperties }, e.log.status || "…"),
-                h("span", { style: { color: c.text2, fontSize: "10px" } as CSSProperties }, `${e.log.duration}ms`),
+                h("span", { style: { fontSize: "10px", fontWeight: 700, padding: "3px 6px", borderRadius: "6px", background: em.bg, color: em.text, textAlign: "center", minWidth: "60px" } as CSSProperties }, e.log.method),
+                h("span", { style: { overflow: "hidden", textOverflow: "ellipsis", whiteSpace: "nowrap", color: c.text, fontSize: "12px", flex: 1, minWidth: "200px" } as CSSProperties }, e.log.route),
+                h("span", { style: { color: statusColor(e.log.status), fontWeight: 600, fontSize: "12px", textAlign: "center", minWidth: "50px" } as CSSProperties }, String(e.log.status || "…")),
+                h("span", { style: { color: c.text2, fontSize: "12px", textAlign: "right", minWidth: "50px" } as CSSProperties }, `${e.log.duration}ms`),
               ])
             }),
       ]),
       // Detail pane
-      h("div", { style: { flex: 1, overflowY: "auto", padding: "14px" } as CSSProperties },
+      h("div", { style: { flex: 1, overflowY: "auto", padding: "20px" } as CSSProperties },
         !sel
           ? [h("div", { style: { display: "flex", alignItems: "center", justifyContent: "center", height: "100%", color: c.text2, fontSize: "13px" } as CSSProperties }, "← Select a request to inspect")]
           : [
-              h("div", { style: { marginBottom: "14px", paddingBottom: "10px", borderBottom: `1px solid ${c.border}` } as CSSProperties }, [
-                h("div", { style: { display: "flex", alignItems: "center", gap: "8px", marginBottom: "4px" } }, [
-                  h("span", { style: { fontSize: "10px", fontWeight: 700, padding: "2px 6px", borderRadius: "4px", background: mc!.bg, color: mc!.text } as CSSProperties }, sel.log.method),
-                  h("span", { style: { fontWeight: 600, fontSize: "13px" } }, sel.log.route),
-                  h("span", { style: { fontWeight: 700, color: statusColor(sel.log.status) } as CSSProperties }, sel.log.status || "…"),
-                  h("span", { style: { fontSize: "10px", padding: "2px 6px", borderRadius: "4px", background: sel.log.excluded ? c.bg3 : "#0d1b2e", color: sel.log.excluded ? c.text2 : "#58a6ff" } as CSSProperties },
-                    sel.log.excluded ? "○ Plain" : "🔒 Encrypted"),
+              h("div", { style: { marginBottom: "20px", paddingBottom: "14px", borderBottom: `1px solid ${c.border}` } as CSSProperties }, [
+                h("div", { style: { display: "flex", alignItems: "center", gap: "10px", marginBottom: "6px" } }, [
+                  h("span", { style: { fontSize: "10px", fontWeight: 700, padding: "3px 6px", borderRadius: "6px", background: mc!.bg, color: mc!.text } as CSSProperties }, sel.log.method),
+                  h("span", { style: { fontWeight: 700, fontSize: "14px" } }, sel.log.route),
+                  h("span", { style: { fontWeight: 700, color: statusColor(sel.log.status) } as CSSProperties }, String(sel.log.status || "…")),
+                  h("span", { style: { fontSize: "10px", padding: "3px 8px", borderRadius: "6px", background: sel.log.excluded ? "rgba(156,164,200,0.1)" : "rgba(96,165,250,0.15)", color: sel.log.excluded ? c.text2 : "#60a5fa", fontWeight: 600 } as CSSProperties },
+                    sel.log.excluded ? "○ Passthrough" : "🔒 Encrypted"),
                   hasClient
                     ? h("button", {
                         disabled: isRequesting, onClick: onReRequest,
-                        style: { marginLeft: "auto", padding: "3px 10px", borderRadius: "6px", border: `1px solid ${c.border}`, background: isRequesting ? c.bg2 : "#0d2010", color: isRequesting ? c.text2 : "#3fb950", cursor: isRequesting ? "not-allowed" : "pointer", fontSize: "11px", fontFamily: "inherit" } as CSSProperties,
+                        style: { marginLeft: "auto", padding: "6px 12px", borderRadius: "8px", border: `1px solid ${c.border}`, background: isRequesting ? c.bg2 : "rgba(74,222,128,0.1)", color: isRequesting ? c.text2 : "#4ade80", cursor: isRequesting ? "not-allowed" : "pointer", fontSize: "12px", fontFamily: "inherit", fontWeight: 500 } as CSSProperties,
                       }, isRequesting ? "Sending..." : "↻ Re-request")
                     : null,
                 ]),
-                h("div", { style: { color: c.text2, fontSize: "10px", display: "flex", gap: "12px" } }, [
+                h("div", { style: { color: c.text2, fontSize: "11px", display: "flex", gap: "14px", flexWrap: "wrap" } }, [
                   h("span", sel.log.timestamp),
-                  h("span", `${sel.log.duration}ms`),
-                  h("span", `fp: ${sel.log.fingerprint.value ? sel.log.fingerprint.value.slice(0, 12) + "…" : "—"}`),
+                  h("span", `Duration: ${sel.log.duration}ms`),
+                  sel.log.fingerprint.value ? h("span", `Hash: ${sel.log.fingerprint.value.slice(0, 12)}…`) : null,
                 ]),
               ]),
-              h("div", { style: { display: "grid", gridTemplateColumns: "1fr 1fr", gap: "12px", marginBottom: "12px" } },
+              h("div", { style: { display: "grid", gridTemplateColumns: "1fr 1fr", gap: "16px", marginBottom: "20px" } },
                 detailPairs.map(([label, content]) =>
                   h("div", { key: label }, [
-                    h("div", { style: { fontSize: "10px", color: c.text2, textTransform: "uppercase", letterSpacing: "0.5px", marginBottom: "6px" } as CSSProperties }, label),
-                    h("div", { style: { background: c.bg2, border: `1px solid ${c.border}`, borderRadius: "6px", padding: "10px", overflowX: "auto" } as CSSProperties },
-                      h("pre", { style: { margin: 0, color: c.text, fontSize: "11px", lineHeight: "1.6", whiteSpace: "pre-wrap", wordBreak: "break-all" } as CSSProperties }, content)),
+                    h("div", { style: { fontSize: "10px", color: "#6366f1", textTransform: "uppercase", letterSpacing: "0.5px", marginBottom: "8px", fontWeight: 700 } as CSSProperties }, label.includes("Request") ? "🔓 Request Data" : "🔓 Response Data"),
+                    h("div", { style: { background: c.bg2, border: `1px solid ${c.border}`, borderRadius: "10px", padding: "12px", overflowX: "auto" } as CSSProperties },
+                      h("pre", { style: { margin: 0, color: c.text, fontSize: "12px", lineHeight: "1.6", whiteSpace: "pre-wrap", wordBreak: "break-all" } as CSSProperties }, content)),
                   ])
                 )
               ),
-              h("div", { style: { display: "grid", gridTemplateColumns: "1fr 1fr", gap: "12px" } },
+              h("div", { style: { display: "grid", gridTemplateColumns: "1fr 1fr", gap: "16px" } },
                 encPairs.map(([label, content]) =>
                   h("div", { key: label }, [
-                    h("div", { style: { fontSize: "10px", color: c.text2, textTransform: "uppercase", letterSpacing: "0.5px", marginBottom: "6px" } as CSSProperties }, label),
-                    h("div", { style: { background: c.bg2, border: `1px solid ${c.border}`, borderRadius: "6px", padding: "10px", overflowX: "auto" } as CSSProperties },
-                      h("pre", { style: { margin: 0, color: c.text2, fontSize: "11px", lineHeight: "1.6", whiteSpace: "pre-wrap", wordBreak: "break-all" } as CSSProperties }, content)),
+                    h("div", { style: { fontSize: "10px", color: "#60a5fa", textTransform: "uppercase", letterSpacing: "0.5px", marginBottom: "8px", fontWeight: 700 } as CSSProperties }, label.includes("Request") ? "🔐 Request Encrypted" : "🔐 Response Encrypted"),
+                    h("div", { style: { background: c.bg2, border: `1px solid ${c.border}`, borderRadius: "10px", padding: "12px", overflowX: "auto", display: "flex", justifyContent: "space-between", alignItems: "flex-start", gap: "8px" } as CSSProperties }, [
+                      h("pre", { style: { margin: 0, color: c.text2, fontSize: "12px", lineHeight: "1.6", whiteSpace: "pre-wrap", wordBreak: "break-all", flex: 1 } as CSSProperties }, content),
+                      h("button", {
+                        onClick: () => navigator.clipboard.writeText(content).catch(() => {}),
+                        style: { padding: "6px 10px", borderRadius: "6px", border: `1px solid ${c.border}`, background: c.bg3, color: c.text2, cursor: "pointer", fontSize: "11px", fontFamily: "inherit", fontWeight: 500, whiteSpace: "nowrap", flexShrink: 0 } as CSSProperties,
+                      }, "📋 Copy"),
+                    ]),
                   ])
                 )
               ),
