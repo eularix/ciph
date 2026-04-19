@@ -82,17 +82,7 @@ jobs:
             DATE=$(date -u +"%Y-%m-%d")
 
             if [ ! -f "$CHANGELOG" ]; then
-              cat > "$CHANGELOG" << EOF
-# Changelog
-
-All notable changes to \`@ciph/${DIR}\` will be documented in this file.
-
-## [${VERSION}] - ${DATE}
-
-### Added
-- Initial release
-
-EOF
+              printf "# Changelog\n\nAll notable changes to @ciph/%s will be documented in this file.\n\n## [%s] - %s\n\n### Added\n- Initial release\n" "$DIR" "$VERSION" "$DATE" > "$CHANGELOG"
             fi
 
             git add "$CHANGELOG" || true

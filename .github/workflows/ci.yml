@@ -25,8 +25,8 @@ jobs:
           node-version: 20
           cache: pnpm
       - run: pnpm install --frozen-lockfile
-      - run: pnpm lint
-      - run: pnpm type-check
+      - run: pnpm turbo lint --filter=!./example/*
+      - run: pnpm turbo type-check --filter=!./example/*
 
   # Per-package test coverage
   test:
@@ -42,7 +42,7 @@ jobs:
           node-version: 20
           cache: pnpm
       - run: pnpm install --frozen-lockfile
-      - run: pnpm test --coverage
+      - run: pnpm turbo test:coverage --filter=!./example/*
       - name: Upload coverage reports
         uses: codecov/codecov-action@v4
         if: always()
@@ -64,7 +64,7 @@ jobs:
           node-version: 20
           cache: pnpm
       - run: pnpm install --frozen-lockfile
-      - run: pnpm turbo build
+      - run: pnpm turbo build --filter=!./example/*
       - name: Verify build outputs
         run: |
           for pkg in packages/*/; do

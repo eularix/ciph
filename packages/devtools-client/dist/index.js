@@ -1,4 +1,4 @@
-// @ciph/devtools-client v0.1.0
+// @ciph/devtools-client v0.3.0-beta.1
 
 // src/client.ts
 var BROADCAST_CHANNEL = "ciph-devtools";
