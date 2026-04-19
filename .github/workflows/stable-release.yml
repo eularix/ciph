@@ -85,7 +85,7 @@ jobs:
               cat > "$CHANGELOG" << EOF
 # Changelog
 
-All notable changes to \`@ciph/${DIR}\` will be documented in this file.
+All notable changes to @ciph/${DIR} will be documented in this file.
 
 ## [${VERSION}] - ${DATE}
 
