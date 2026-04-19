@@ -115,16 +115,19 @@ export function initDevtools(config?: CiphDevtoolsConfig): void {
     _maxLogs = config.maxInMemoryLogs
   }
 
-  globalThis.ciphServerEmitter?.on("log", (log) => {
-    // Add to in-memory circular buffer
-    _logs.unshift(log)
-    if (_logs.length > _maxLogs) _logs.pop()
+  // Subscribe to logs if emitter exists and has on method
+  if (globalThis.ciphServerEmitter && typeof globalThis.ciphServerEmitter.on === 'function') {
+    globalThis.ciphServerEmitter.on("log", (log) => {
+      // Add to in-memory circular buffer
+      _logs.unshift(log)
+      if (_logs.length > _maxLogs) _logs.pop()
 
-    // Write to disk if persistent mode
-    if (_devtoolsConfig.temporary === false) {
-      writeLogToFile(log).catch(() => { /* silently fail */ })
-    }
-  })
+      // Write to disk if persistent mode
+      if (_devtoolsConfig.temporary === false) {
+        writeLogToFile(log).catch(() => { /* silently fail */ })
+      }
+    })
+  }
 }
 
 // ─── Inspector HTML ────────────────────────────────────────────────────────────

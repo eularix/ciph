@@ -1,14 +1,10 @@
 name: Release
 
 on:
-  push:
-    branches:
-      - main
-    paths:
-      - '.changeset/**'
-      - 'packages/**'
-      - 'package.json'
-      - 'bun.lock'
+  workflow_run:
+    workflows: ["CI"]
+    branches: [main]
+    types: [completed]
 
 permissions:
   contents: write
