@@ -12,14 +12,14 @@ export default async function Page(props: PageProps<'/docs/[[...slug]]'>) {
   const MDX = page.data.body;
 
   return (
-    <div className="flex flex-col gap-4">
-      <div>
-        <h1 className="text-3xl sm:text-4xl font-bold mb-2">{page.data.title}</h1>
+    <div className="flex flex-col gap-4 w-full">
+      <div className="space-y-2">
+        <h1 className="text-3xl sm:text-4xl font-bold mb-2 break-words">{page.data.title}</h1>
         {page.data.description && (
-          <p className="text-base sm:text-lg text-muted-foreground">{page.data.description}</p>
+          <p className="text-base sm:text-lg text-muted-foreground break-words">{page.data.description}</p>
         )}
       </div>
-      <article className="prose dark:prose-invert prose-sm sm:prose-base max-w-none overflow-hidden">
+      <article className="prose dark:prose-invert prose-sm sm:prose-base max-w-none overflow-hidden w-full">
         <MDX
           components={getMDXComponents({
             a: createRelativeLink(source, page),

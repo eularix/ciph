@@ -214,3 +214,282 @@ html > body[data-scroll-locked] {
     margin-left: 0;
   }
 }
+
+/* ─── Enhanced MDX Content Responsive Styling ──────────────────────────────── */
+
+/* Code blocks - better scrolling on mobile */
+.prose pre {
+  border-radius: 6px;
+  background: hsl(220, 25%, 8%) !important;
+  border: 1px solid rgba(255, 255, 255, 0.06);
+  overflow-x: auto;
+  -webkit-overflow-scrolling: touch;
+  scroll-behavior: smooth;
+}
+
+.prose pre code {
+  background: transparent !important;
+  border: none !important;
+  padding: 0 !important;
+  font-size: inherit;
+  line-height: 1.6;
+}
+
+/* Inline code */
+.prose :not(pre) > code {
+  background: hsla(218, 91%, 64%, 15%) !important;
+  color: hsl(218, 91%, 75%) !important;
+  border: 1px solid hsla(218, 91%, 64%, 25%) !important;
+  border-radius: 4px;
+  padding: 2px 6px;
+  font-size: 0.9em;
+}
+
+@media (max-width: 640px) {
+  .prose :not(pre) > code {
+    padding: 1px 4px;
+    font-size: 0.85em;
+    word-break: break-word;
+  }
+}
+
+/* Images - make fully responsive */
+.prose img {
+  max-width: 100%;
+  height: auto;
+  border-radius: 6px;
+  display: block;
+}
+
+/* Tables - fully responsive on mobile */
+.prose table {
+  display: block;
+  overflow-x: auto;
+  -webkit-overflow-scrolling: touch;
+  border-collapse: collapse;
+  width: 100%;
+}
+
+.prose table thead {
+  background: hsla(218, 91%, 64%, 8%);
+}
+
+.prose table th,
+.prose table td {
+  border: 1px solid rgba(255, 255, 255, 0.08);
+  padding: 10px 12px;
+  text-align: left;
+}
+
+.prose table th {
+  background: hsla(218, 91%, 64%, 10%);
+  font-weight: 600;
+  color: hsl(218, 91%, 78%);
+}
+
+.prose table tbody tr:hover {
+  background: hsla(218, 91%, 64%, 5%);
+}
+
+@media (max-width: 640px) {
+  .prose table {
+    font-size: 0.85rem;
+  }
+
+  .prose table th,
+  .prose table td {
+    padding: 8px 10px;
+  }
+
+  /* Stack table on very small screens */
+  .prose table thead {
+    display: none;
+  }
+
+  .prose table tbody tr {
+    display: block;
+    margin-bottom: 10px;
+    border: 1px solid rgba(255, 255, 255, 0.08);
+    border-radius: 4px;
+    background: hsla(218, 91%, 64%, 3%);
+  }
+
+  .prose table tbody td {
+    display: block;
+    text-align: right;
+    padding-left: 50%;
+    position: relative;
+    border: none;
+    padding: 8px;
+  }
+
+  .prose table tbody td:before {
+    content: attr(data-label);
+    position: absolute;
+    left: 8px;
+    font-weight: 600;
+    color: hsl(218, 91%, 78%);
+  }
+}
+
+/* Lists - better mobile spacing */
+.prose ul,
+.prose ol {
+  margin: 1rem 0;
+}
+
+.prose li {
+  margin: 0.5rem 0;
+  line-height: 1.6;
+}
+
+.prose li > p {
+  margin: 0.25rem 0;
+}
+
+.prose ul > li {
+  padding-left: 1.5rem;
+}
+
+.prose ol > li {
+  padding-left: 1.75rem;
+}
+
+@media (max-width: 640px) {
+  .prose ul > li {
+    padding-left: 1.25rem;
+  }
+
+  .prose ol > li {
+    padding-left: 1.5rem;
+  }
+}
+
+/* Blockquotes - responsive styling */
+.prose blockquote {
+  border-left: 4px solid hsl(218, 91%, 64%);
+  padding-left: 1rem;
+  margin: 1.5rem 0;
+  color: hsl(210, 40%, 80%);
+  font-style: italic;
+  background: hsla(218, 91%, 64%, 5%);
+  padding: 0.75rem 1rem;
+  border-radius: 4px;
+}
+
+@media (max-width: 640px) {
+  .prose blockquote {
+    border-left: 3px solid hsl(218, 91%, 64%);
+    padding-left: 0.75rem;
+    padding: 0.6rem 0.75rem;
+    margin: 1rem 0;
+  }
+}
+
+/* Headings - responsive with better line height */
+.prose h1,
+.prose h2,
+.prose h3,
+.prose h4,
+.prose h5,
+.prose h6 {
+  line-height: 1.3;
+  word-break: break-word;
+  margin-top: 1.5rem;
+  margin-bottom: 0.75rem;
+}
+
+.prose h1 {
+  font-size: 2rem;
+  font-weight: 800;
+  letter-spacing: -0.02em;
+}
+
+.prose h2 {
+  font-size: 1.5rem;
+  font-weight: 700;
+  border-bottom: 2px solid rgba(255, 255, 255, 0.08);
+  padding-bottom: 0.5rem;
+}
+
+.prose h3 {
+  font-size: 1.25rem;
+  font-weight: 600;
+}
+
+.prose h4 {
+  font-size: 1.1rem;
+  font-weight: 600;
+}
+
+@media (max-width: 640px) {
+  .prose h1 {
+    font-size: 1.75rem;
+  }
+
+  .prose h2 {
+    font-size: 1.35rem;
+  }
+
+  .prose h3 {
+    font-size: 1.1rem;
+  }
+
+  .prose h4 {
+    font-size: 1rem;
+  }
+}
+
+/* Paragraphs and text */
+.prose p {
+  margin: 1rem 0;
+  line-height: 1.8;
+  word-break: break-word;
+}
+
+.prose strong,
+.prose b {
+  font-weight: 600;
+  color: hsl(218, 91%, 82%);
+}
+
+.prose em,
+.prose i {
+  font-style: italic;
+}
+
+/* Links with better mobile interaction */
+.prose a {
+  color: hsl(218, 91%, 72%);
+  text-decoration: none;
+  border-bottom: 1px solid hsla(218, 91%, 72%, 30%);
+  transition: all 0.15s ease;
+  word-break: break-word;
+}
+
+.prose a:hover {
+  color: hsl(218, 91%, 82%);
+  border-bottom-color: hsl(218, 91%, 72%);
+}
+
+@media (max-width: 640px) {
+  .prose a {
+    padding: 2px 0;
+  }
+}
+
+/* Horizontal rule */
+.prose hr {
+  border: none;
+  border-top: 1px solid rgba(255, 255, 255, 0.08);
+  margin: 2rem 0;
+}
+
+/* MDX component containers */
+.prose > *:first-child {
+  margin-top: 0;
+}
+
+.prose > *:last-child {
+  margin-bottom: 0;
+}
