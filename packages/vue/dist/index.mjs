@@ -389,7 +389,7 @@ var CiphPlugin = {
         app.mixin({
           mounted() {
             if (this.$parent !== null) return;
-            import("./CiphDevtoolsPanel-IQE7ECEN.mjs").then(({ mountDevtoolsPanel }) => {
+            import("./CiphDevtoolsPanel-25S5YKRH.mjs").then(({ mountDevtoolsPanel }) => {
               mountDevtoolsPanel(panelOptions);
             }).catch(() => {
             });
