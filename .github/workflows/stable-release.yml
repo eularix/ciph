@@ -39,11 +39,27 @@ jobs:
       - name: Detect changed packages since last stable release
         id: detect
         run: |
-          LAST_STABLE=$(git log --oneline main | grep -v "chore: bump stable versions" | head -1 | awk '{print $1}' || echo 'origin/main^')
-          RESULT=$(node scripts/detect-changed-packages.js "$LAST_STABLE")
-
-          DIRS=$(echo "$RESULT" | jq -r '.directories | join(",")')
-          PKGS=$(echo "$RESULT" | jq -r '.packages | join(",")')
+          # Get all package.json files in packages/
+          DIRS=""
+          PKGS=""
+          
+          for pkg_dir in packages/*/; do
+            DIR_NAME=$(basename "$pkg_dir")
+            if [ -f "$pkg_dir/package.json" ]; then
+              PKG_NAME=$(jq -r '.name' "$pkg_dir/package.json")
+              IS_PRIVATE=$(jq -r '.private // false' "$pkg_dir/package.json")
+              
+              # Skip private packages
+              if [ "$IS_PRIVATE" != "true" ]; then
+                DIRS="${DIRS}${DIR_NAME},"
+                PKGS="${PKGS}${PKG_NAME},"
+              fi
+            fi
+          done
+          
+          # Remove trailing commas
+          DIRS="${DIRS%,}"
+          PKGS="${PKGS%,}"
           HAS_CHANGES=$([ -z "$DIRS" ] && echo "false" || echo "true")
 
           echo "directories=$DIRS" >> "$GITHUB_OUTPUT"
@@ -52,6 +68,7 @@ jobs:
 
           echo "Changed dirs: $DIRS"
           echo "Changed packages: $PKGS"
+          echo "Has changes: $HAS_CHANGES"
 
       - name: Promote beta to stable versions
         if: steps.detect.outputs.has-changes == 'true'
