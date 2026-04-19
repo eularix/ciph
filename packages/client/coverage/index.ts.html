@@ -23,16 +23,16 @@
         <div class='clearfix'>
             
             <div class='fl pad1y space-right2'>
-                <span class="strong">52.01% </span>
+                <span class="strong">51.53% </span>
                 <span class="quiet">Statements</span>
-                <span class='fraction'>232/446</span>
+                <span class='fraction'>235/456</span>
             </div>
         
             
             <div class='fl pad1y space-right2'>
-                <span class="strong">55.78% </span>
+                <span class="strong">55.67% </span>
                 <span class="quiet">Branches</span>
-                <span class='fraction'>53/95</span>
+                <span class='fraction'>54/97</span>
             </div>
         
             
@@ -44,9 +44,9 @@
         
             
             <div class='fl pad1y space-right2'>
-                <span class="strong">52.01% </span>
+                <span class="strong">51.53% </span>
                 <span class="quiet">Lines</span>
-                <span class='fraction'>232/446</span>
+                <span class='fraction'>235/456</span>
             </div>
         
             
@@ -685,7 +685,21 @@
 <a name='L620'></a><a href='#L620'>620</a>
 <a name='L621'></a><a href='#L621'>621</a>
 <a name='L622'></a><a href='#L622'>622</a>
-<a name='L623'></a><a href='#L623'>623</a></td><td class="line-coverage quiet"><span class="cline-any cline-yes">1x</span>
+<a name='L623'></a><a href='#L623'>623</a>
+<a name='L624'></a><a href='#L624'>624</a>
+<a name='L625'></a><a href='#L625'>625</a>
+<a name='L626'></a><a href='#L626'>626</a>
+<a name='L627'></a><a href='#L627'>627</a>
+<a name='L628'></a><a href='#L628'>628</a>
+<a name='L629'></a><a href='#L629'>629</a>
+<a name='L630'></a><a href='#L630'>630</a>
+<a name='L631'></a><a href='#L631'>631</a>
+<a name='L632'></a><a href='#L632'>632</a>
+<a name='L633'></a><a href='#L633'>633</a>
+<a name='L634'></a><a href='#L634'>634</a>
+<a name='L635'></a><a href='#L635'>635</a>
+<a name='L636'></a><a href='#L636'>636</a>
+<a name='L637'></a><a href='#L637'>637</a></td><td class="line-coverage quiet"><span class="cline-any cline-yes">1x</span>
 <span class="cline-any cline-neutral">&nbsp;</span>
 <span class="cline-any cline-neutral">&nbsp;</span>
 <span class="cline-any cline-neutral">&nbsp;</span>
@@ -1135,7 +1149,21 @@
 <span class="cline-any cline-yes">1x</span>
 <span class="cline-any cline-yes">1x</span>
 <span class="cline-any cline-neutral">&nbsp;</span>
+<span class="cline-any cline-neutral">&nbsp;</span>
+<span class="cline-any cline-neutral">&nbsp;</span>
+<span class="cline-any cline-neutral">&nbsp;</span>
 <span class="cline-any cline-yes">2x</span>
+<span class="cline-any cline-yes">2x</span>
+<span class="cline-any cline-yes">2x</span>
+<span class="cline-any cline-yes">2x</span>
+<span class="cline-any cline-no">&nbsp;</span>
+<span class="cline-any cline-no">&nbsp;</span>
+<span class="cline-any cline-no">&nbsp;</span>
+<span class="cline-any cline-no">&nbsp;</span>
+<span class="cline-any cline-no">&nbsp;</span>
+<span class="cline-any cline-no">&nbsp;</span>
+<span class="cline-any cline-no">&nbsp;</span>
+<span class="cline-any cline-neutral">&nbsp;</span>
 <span class="cline-any cline-yes">3x</span>
 <span class="cline-any cline-no">&nbsp;</span>
 <span class="cline-any cline-no">&nbsp;</span>
@@ -1757,8 +1785,22 @@ export function createClient(config: CiphClientConfig): {
         return response
       }
 &nbsp;
-      const encryptedBody = response.data
-      if (typeof encryptedBody !== "string") <span class="branch-0 cbranch-no" title="branch not covered" >{</span>
+      // Support both wire formats:
+      // - Legacy: raw ciphertext string (text/plain)
+      // - Current: { status: "encrypted", data: "&lt;ciphertext&gt;" } (application/json)
+      let ciphertext: string | null = null
+      if (typeof response.data === "string") {
+        ciphertext = response.data
+<span class="branch-0 cbranch-no" title="branch not covered" >      } else if (</span>
+<span class="cstat-no" title="statement not covered" >        response.data !== null &amp;&amp;</span>
+<span class="cstat-no" title="statement not covered" >        typeof response.data === "object" &amp;&amp;</span>
+<span class="cstat-no" title="statement not covered" >        (response.data as { status?: unknown }).status === "encrypted" &amp;&amp;</span>
+<span class="cstat-no" title="statement not covered" >        typeof (response.data as { data?: unknown }).data === "string"</span>
+<span class="cstat-no" title="statement not covered" >      ) {</span>
+<span class="cstat-no" title="statement not covered" >        ciphertext = (response.data as { data: string }).data</span>
+<span class="cstat-no" title="statement not covered" >      }</span>
+&nbsp;
+      if (ciphertext === null) <span class="branch-0 cbranch-no" title="branch not covered" >{</span>
 <span class="cstat-no" title="statement not covered" >        return response</span>
 <span class="cstat-no" title="statement not covered" >      }</span>
 &nbsp;
@@ -1775,7 +1817,7 @@ export function createClient(config: CiphClientConfig): {
           key = await deriveKey(config.secret!, fingerprint)
         }
 &nbsp;
-        const decrypted = await decrypt(encryptedBody, key)
+        const decrypted = await decrypt(ciphertext, key)
         response.data = JSON.parse(decrypted.plaintext) as unknown
 <span class="branch-0 cbranch-no" title="branch not covered" >      } catch (error) {</span>
 <span class="cstat-no" title="statement not covered" >        if (fallbackToPlain) {</span>
@@ -1936,7 +1978,7 @@ export function createClient(config: CiphClientConfig): {
             <div class='footer quiet pad2 space-top1 center small'>
                 Code coverage generated by
                 <a href="https://istanbul.js.org/" target="_blank" rel="noopener noreferrer">istanbul</a>
-                at 2026-04-19T05:34:09.290Z
+                at 2026-04-19T09:45:02.130Z
             </div>
         <script src="prettify.js"></script>
         <script>
