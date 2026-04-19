@@ -1,0 +1,7 @@
+User-agent: *
+Allow: /
+Disallow: /.next
+Disallow: /api/
+Disallow: /admin
+
+Sitemap: https://ciph.sh/sitemap.xml

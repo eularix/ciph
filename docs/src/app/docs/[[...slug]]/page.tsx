@@ -39,11 +39,38 @@ export async function generateMetadata(props: PageProps<'/docs/[[...slug]]'>): P
   const page = source.getPage(params.slug);
   if (!page) notFound();
 
+  const pageImage = getPageImage(page);
+  const pageUrl = `https://ciph.sh/docs/${page.slugs.join('/')}`;
+
   return {
     title: page.data.title,
     description: page.data.description,
+    alternates: {
+      canonical: pageUrl,
+    },
     openGraph: {
-      images: getPageImage(page).url,
+      type: 'article',
+      title: page.data.title,
+      description: page.data.description,
+      url: pageUrl,
+      siteName: 'Ciph',
+      images: [
+        {
+          url: pageImage.url,
+          width: 1200,
+          height: 630,
+          alt: page.data.title,
+          type: 'image/png',
+        },
+      ],
+      locale: 'en_US',
+    },
+    twitter: {
+      card: 'summary_large_image',
+      title: page.data.title,
+      description: page.data.description,
+      images: [pageImage.url],
+      creator: '@eularix',
     },
   };
 }
