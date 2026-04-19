@@ -18,6 +18,8 @@
   "scripts": {
     "build": "tsup",
     "dev": "tsup --watch",
+    "test": "echo 'no tests'",
+    "test:coverage": "echo 'no tests'",
     "type-check": "tsc --noEmit",
     "lint": "echo 'no lint'"
   },
