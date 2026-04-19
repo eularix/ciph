@@ -8,11 +8,11 @@ export default function Layout({ children }: LayoutProps<'/docs'>) {
       tree={source.getPageTree()}
       sidebar={{
         defaultOpenLevel: 999,
-        collapsible: false,
+        collapsible: true,
       }}
       {...docsOptions()}
     >
-      <div className="px-6 py-8">
+      <div className="px-4 py-6 sm:px-6 sm:py-8">
         {children}
       </div>
     </DocsLayout>

@@ -130,3 +130,87 @@ html > body[data-scroll-locked] {
 ::-webkit-scrollbar-thumb:hover {
   background: rgba(255, 255, 255, 0.18);
 }
+
+/* ─── Mobile Responsive ────────────────────────────────────────────────────── */
+
+/* Ensure proper overflow on code blocks and tables */
+.prose pre,
+.prose table,
+.prose code {
+  max-width: 100%;
+  overflow-x: auto;
+}
+
+.prose pre {
+  font-size: 0.75rem;
+}
+
+@media (max-width: 640px) {
+  .prose {
+    font-size: 0.95rem;
+  }
+
+  .prose pre {
+    font-size: 0.7rem;
+    padding: 0.75rem;
+  }
+
+  .prose code {
+    word-break: break-word;
+    overflow-wrap: break-word;
+  }
+
+  .prose table {
+    display: block;
+    overflow-x: auto;
+    -webkit-overflow-scrolling: touch;
+  }
+
+  .prose table tr {
+    display: table;
+    width: 100%;
+  }
+
+  .prose h1 {
+    font-size: 1.875rem;
+    word-break: break-word;
+  }
+
+  .prose h2 {
+    font-size: 1.5rem;
+    word-break: break-word;
+  }
+
+  .prose h3 {
+    font-size: 1.25rem;
+    word-break: break-word;
+  }
+
+  .prose h4 {
+    font-size: 1.125rem;
+    word-break: break-word;
+  }
+
+  .prose p {
+    word-break: break-word;
+  }
+
+  .prose a {
+    word-break: break-word;
+  }
+
+  .prose blockquote {
+    margin-left: 0.75rem;
+    padding-left: 0.75rem;
+    border-left: 3px solid hsl(218, 91%, 64%);
+  }
+
+  .prose ul,
+  .prose ol {
+    padding-left: 1rem;
+  }
+
+  .prose li {
+    margin-left: 0;
+  }
+}
