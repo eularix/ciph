@@ -18,6 +18,7 @@ jobs:
   detect-and-promote:
     name: Detect Changes & Promote to Stable
     runs-on: ubuntu-latest
+    if: github.event.workflow_run.conclusion == 'success'
     outputs:
       changed-dirs: ${{ steps.detect.outputs.directories }}
       changed-packages: ${{ steps.detect.outputs.packages }}

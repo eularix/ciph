@@ -18,6 +18,7 @@ jobs:
   detect-and-bump:
     name: Detect Changes & Bump Beta
     runs-on: ubuntu-latest
+    if: github.event.workflow_run.conclusion == 'success'
     outputs:
       changed-dirs: ${{ steps.detect.outputs.directories }}
       changed-packages: ${{ steps.detect.outputs.packages }}
