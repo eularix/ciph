@@ -1,5 +1,13 @@
 # @ciph/core
 
+## 0.7.0
+
+### Minor Changes
+
+- 4b8f626: Release stable versions: remove beta tags and publish to npm latest
+- 4b8f626: Release stable versions: remove beta tags and publish to npm latest
+- b93548b: Release stable versions: remove beta tags and publish to npm latest
+
 ## 0.6.0
 
 ### Minor Changes

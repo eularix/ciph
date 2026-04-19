@@ -1,6 +1,6 @@
 {
   "name": "@ciph/devtools-server",
-  "version": "1.0.0",
+  "version": "2.0.0",
   "description": "Standalone devtools server for Ciph - captures server logs via globalThis.ciphServerEmitter, exposes WebSocket + REST API",
   "main": "./dist/index.cjs",
   "module": "./dist/index.js",
