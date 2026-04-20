@@ -1,0 +1,654 @@
+<!-- Ciph DevTools Floating Panel for Svelte -->
+<script lang="ts">
+  import type { CiphClientLog } from '@ciph/core'
+  import { onMount } from 'svelte'
+
+  interface Props {
+    position?: 'bottom-right' | 'bottom-left' | 'top-right' | 'top-left'
+    defaultOpen?: boolean
+    maxLogs?: number
+    shortcut?: string | null
+    disabled?: boolean
+  }
+
+  let {
+    position = 'bottom-right',
+    defaultOpen = false,
+    maxLogs = 100,
+    shortcut = 'ctrl+shift+c',
+    disabled = false,
+  }: Props = $props()
+
+  let isOpen = $state(defaultOpen)
+  let logs: CiphClientLog[] = $state([])
+  let selectedLog: CiphClientLog | null = $state(null)
+  let isDragging = $state(false)
+  let dragOffset: { x: number; y: number } = $state({ x: 0, y: 0 })
+
+  onMount(() => {
+    if (disabled || typeof globalThis === 'undefined') return
+
+    // Subscribe to devtools emitter
+    const emitter = (globalThis as any).__ciphClientEmitter__
+    if (!emitter) return
+
+    const unsubscribe = emitter.on('log', (log: CiphClientLog) => {
+      logs = [log, ...logs].slice(0, maxLogs)
+    })
+
+    // Keyboard shortcut
+    if (shortcut) {
+      const handleKeydown = (e: KeyboardEvent) => {
+        const keys = shortcut.split('+').map((k) => k.trim().toLowerCase())
+        const pressed = {
+          ctrl: e.ctrlKey || e.metaKey,
+          shift: e.shiftKey,
+          alt: e.altKey,
+          c: e.key.toLowerCase() === 'c',
+        }
+
+        if (
+          (keys.includes('ctrl') && pressed.ctrl) ||
+          (keys.includes('cmd') && pressed.ctrl)
+        ) {
+          if (keys.includes('shift') && pressed.shift && keys.includes('c') && pressed.c) {
+            isOpen = !isOpen
+            e.preventDefault()
+          }
+        }
+      }
+
+      globalThis.addEventListener('keydown', handleKeydown)
+      return () => globalThis.removeEventListener('keydown', handleKeydown)
+    }
+
+    return () => {
+      unsubscribe?.()
+    }
+  })
+
+  function formatTime(timestamp: number): string {
+    return new Date(timestamp).toLocaleTimeString()
+  }
+
+  function getStatusColor(status: number): string {
+    if (status >= 200 && status < 300) return '#4ec9b0'
+    if (status >= 300 && status < 400) return '#dcdcaa'
+    if (status >= 400 && status < 500) return '#f57e6d'
+    return '#ff6b6b'
+  }
+
+  function isBottomRight() {
+    return position === 'bottom-right'
+  }
+  function isBottomLeft() {
+    return position === 'bottom-left'
+  }
+  function isTopRight() {
+    return position === 'top-right'
+  }
+  function isTopLeft() {
+    return position === 'top-left'
+  }
+</script>
+
+{#if !disabled}
+  <div class="devtools-container" class:open={isOpen}>
+    <!-- Toggle Button -->
+    {#if !isOpen}
+      <button
+        class="toggle-button"
+        class:bottom-right={isBottomRight()}
+        class:bottom-left={isBottomLeft()}
+        class:top-right={isTopRight()}
+        class:top-left={isTopLeft()}
+        onclick={() => (isOpen = true)}
+        title="Open Ciph DevTools (Ctrl+Shift+C)"
+      >
+        🔍
+      </button>
+    {/if}
+
+    <!-- Panel -->
+    {#if isOpen}
+      <div
+        class="panel"
+        class:bottom-right={isBottomRight()}
+        class:bottom-left={isBottomLeft()}
+        class:top-right={isTopRight()}
+        class:top-left={isTopLeft()}
+        class:dragging={isDragging}
+      >
+        <!-- Header -->
+        <div
+          class="header"
+          onmousedown={(e) => {
+            isDragging = true
+            dragOffset = {
+              x: e.clientX - (e.currentTarget as HTMLElement).offsetLeft,
+              y: e.clientY - (e.currentTarget as HTMLElement).offsetTop,
+            }
+          }}
+          onmouseup={() => (isDragging = false)}
+          onmousemove={(e) => {
+            if (isDragging) {
+              const panel = (e.target as HTMLElement).closest('.panel')
+              if (panel) {
+                panel.style.left = e.clientX - dragOffset.x + 'px'
+                panel.style.top = e.clientY - dragOffset.y + 'px'
+              }
+            }
+          }}
+          onmouseleave={() => (isDragging = false)}
+        >
+          <h3>🔐 Ciph DevTools</h3>
+          <button
+            class="close-button"
+            onclick={() => (isOpen = false)}
+            title="Close (Ctrl+Shift+C)"
+          >
+            ✕
+          </button>
+        </div>
+
+        <!-- Logs List -->
+        <div class="logs-container">
+          {#if logs.length === 0}
+            <div class="empty-state">
+              <p>No requests yet</p>
+              <p style="font-size: 12px; color: #858585;">Send a request to see it here</p>
+            </div>
+          {:else}
+            <table>
+              <tbody>
+                {#each logs as log (log.timestamp)}
+                  <tr
+                    class="log-row"
+                    class:selected={selectedLog === log}
+                    onclick={() => (selectedLog = selectedLog === log ? null : log)}
+                  >
+                    <td class="method">{log.method}</td>
+                    <td class="route">{log.route}</td>
+                    <td class="status" style="color: {getStatusColor(log.status)}">
+                      {log.status}
+                    </td>
+                    <td class="time">{formatTime(log.timestamp)}</td>
+                    <td class="badge">
+                      {#if log.encryptedResponseBody}
+                        <span class="encrypted-badge">🔐</span>
+                      {:else}
+                        <span class="plain-badge">📄</span>
+                      )}
+                    </td>
+                  </tr>
+
+                  {#if selectedLog === log}
+                    <tr class="detail-row">
+                      <td colspan="5">
+                        <div class="detail-panel">
+                          {#if log.plainRequestBody}
+                            <div class="detail-section">
+                              <h4>📤 Request (Plain)</h4>
+                              <pre>{typeof log.plainRequestBody === 'string' ? log.plainRequestBody : JSON.stringify(log.plainRequestBody, null, 2)}</pre>
+                            </div>
+                          {/if}
+
+                          {#if log.encryptedRequestBody}
+                            <div class="detail-section">
+                              <h4>🔐 Request (Encrypted)</h4>
+                              <pre>{log.encryptedRequestBody.substring(0, 80)}...</pre>
+                            </div>
+                          {/if}
+
+                          {#if log.plainResponseBody}
+                            <div class="detail-section">
+                              <h4>📥 Response (Plain)</h4>
+                              <pre>{typeof log.plainResponseBody === 'string' ? log.plainResponseBody : JSON.stringify(log.plainResponseBody, null, 2)}</pre>
+                            </div>
+                          {/if}
+
+                          {#if log.encryptedResponseBody}
+                            <div class="detail-section">
+                              <h4>🔐 Response (Encrypted)</h4>
+                              <pre>{log.encryptedResponseBody.substring(0, 80)}...</pre>
+                            </div>
+                          {/if}
+
+                          {#if log.error}
+                            <div class="detail-section error">
+                              <h4>❌ Error</h4>
+                              <pre>{typeof log.error === 'string' ? log.error : JSON.stringify(log.error, null, 2)}</pre>
+                            </div>
+                          {/if}
+                        </div>
+                      </td>
+                    </tr>
+                  {/if}
+                {/each}
+              </tbody>
+            </table>
+          {/if}
+        </div>
+
+        <!-- Footer -->
+        <div class="footer">
+          <small>{logs.length} logs • Ctrl+Shift+C to toggle</small>
+        </div>
+      </div>
+    {/if}
+  </div>
+{/if}
+        <!-- Header -->
+        <div
+          class="header"
+          onmousedown={(e) => {
+            isDragging = true
+            dragOffset = {
+              x: e.clientX - (e.currentTarget as HTMLElement).offsetLeft,
+              y: e.clientY - (e.currentTarget as HTMLElement).offsetTop,
+            }
+          }}
+          onmouseup={() => (isDragging = false)}
+          onmousemove={(e) => {
+            if (isDragging) {
+              const panel = (e.target as HTMLElement).closest('.panel')
+              if (panel) {
+                panel.style.left = e.clientX - dragOffset.x + 'px'
+                panel.style.top = e.clientY - dragOffset.y + 'px'
+              }
+            }
+          }}
+          onmouseleave={() => (isDragging = false)}
+        >
+          <h3>🔐 Ciph DevTools</h3>
+          <button
+            class="close-button"
+            onclick={() => (isOpen = false)}
+            title="Close (Ctrl+Shift+C)"
+          >
+            ✕
+          </button>
+        </div>
+
+        <!-- Logs List -->
+        <div class="logs-container">
+          {#if logs.length === 0}
+            <div class="empty-state">
+              <p>No requests yet</p>
+              <p style="font-size: 12px; color: #858585;">Send a request to see it here</p>
+            </div>
+          {:else}
+            <table>
+              <tbody>
+                {#each logs as log (log.timestamp)}
+                  <tr
+                    class="log-row"
+                    class:selected={selectedLog === log}
+                    onclick={() => (selectedLog = selectedLog === log ? null : log)}
+                  >
+                    <td class="method">{log.method}</td>
+                    <td class="route">{log.route}</td>
+                    <td class="status" style="color: {getStatusColor(log.status)}">
+                      {log.status}
+                    </td>
+                    <td class="time">{formatTime(log.timestamp)}</td>
+                    <td class="badge">
+                      {#if log.encryptedResponseBody}
+                        <span class="encrypted-badge">🔐</span>
+                      {:else}
+                        <span class="plain-badge">📄</span>
+                      )}
+                    </td>
+                  </tr>
+
+                  {#if selectedLog === log}
+                    <tr class="detail-row">
+                      <td colspan="5">
+                        <div class="detail-panel">
+                          {#if log.plainRequestBody}
+                            <div class="detail-section">
+                              <h4>📤 Request (Plain)</h4>
+                              <pre>{typeof log.plainRequestBody === 'string' ? log.plainRequestBody : JSON.stringify(log.plainRequestBody, null, 2)}</pre>
+                            </div>
+                          {/if}
+
+                          {#if log.encryptedRequestBody}
+                            <div class="detail-section">
+                              <h4>🔐 Request (Encrypted)</h4>
+                              <pre>{log.encryptedRequestBody.substring(0, 80)}...</pre>
+                            </div>
+                          {/if}
+
+                          {#if log.plainResponseBody}
+                            <div class="detail-section">
+                              <h4>📥 Response (Plain)</h4>
+                              <pre>{typeof log.plainResponseBody === 'string' ? log.plainResponseBody : JSON.stringify(log.plainResponseBody, null, 2)}</pre>
+                            </div>
+                          {/if}
+
+                          {#if log.encryptedResponseBody}
+                            <div class="detail-section">
+                              <h4>🔐 Response (Encrypted)</h4>
+                              <pre>{log.encryptedResponseBody.substring(0, 80)}...</pre>
+                            </div>
+                          {/if}
+
+                          {#if log.error}
+                            <div class="detail-section error">
+                              <h4>❌ Error</h4>
+                              <pre>{typeof log.error === 'string' ? log.error : JSON.stringify(log.error, null, 2)}</pre>
+                            </div>
+                          {/if}
+                        </div>
+                      </td>
+                    </tr>
+                  {/if}
+                {/each}
+              </tbody>
+            </table>
+          {/if}
+        </div>
+
+        <!-- Footer -->
+        <div class="footer">
+          <small>{logs.length} logs • Ctrl+Shift+C to toggle</small>
+        </div>
+      </div>
+    {/if}
+  </div>
+{/if}
+
+<style>
+  .devtools-container {
+    position: fixed;
+    z-index: 9999;
+    font-family: 'Courier New', monospace;
+    font-size: 13px;
+  }
+
+  .toggle-button {
+    width: 50px;
+    height: 50px;
+    border-radius: 50%;
+    background: linear-gradient(135deg, #4ec9b0 0%, #2d9d7d 100%);
+    border: none;
+    color: white;
+    font-size: 24px;
+    cursor: pointer;
+    box-shadow: 0 4px 12px rgba(78, 201, 176, 0.3);
+    transition: all 0.2s;
+  }
+
+  .toggle-button:hover {
+    transform: scale(1.1);
+    box-shadow: 0 6px 16px rgba(78, 201, 176, 0.5);
+  }
+
+  .toggle-button.bottom-right {
+    bottom: 20px;
+    right: 20px;
+  }
+
+  .toggle-button.bottom-left {
+    bottom: 20px;
+    left: 20px;
+  }
+
+  .toggle-button.top-right {
+    top: 20px;
+    right: 20px;
+  }
+
+  .toggle-button.top-left {
+    top: 20px;
+    left: 20px;
+  }
+
+  .panel {
+    min-width: 600px;
+    max-height: 400px;
+    background: #161616;
+    border: 1px solid #404040;
+    border-radius: 8px;
+    box-shadow: 0 20px 60px rgba(0, 0, 0, 0.5);
+    display: flex;
+    flex-direction: column;
+    position: fixed;
+    user-select: none;
+  }
+
+  .panel.dragging {
+    cursor: grabbing;
+  }
+
+  .panel.bottom-right {
+    bottom: 20px;
+    right: 20px;
+  }
+
+  .panel.bottom-left {
+    bottom: 20px;
+    left: 20px;
+  }
+
+  .panel.top-right {
+    top: 20px;
+    right: 20px;
+  }
+
+  .panel.top-left {
+    top: 20px;
+    left: 20px;
+  }
+
+  .header {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    padding: 12px;
+    border-bottom: 1px solid #404040;
+    background: linear-gradient(90deg, #0f0f0f, #1a1a1a);
+    cursor: grab;
+    user-select: none;
+  }
+
+  .header:active {
+    cursor: grabbing;
+  }
+
+  .header h3 {
+    margin: 0;
+    color: #4ec9b0;
+    font-size: 14px;
+    font-weight: 600;
+  }
+
+  .close-button {
+    background: transparent;
+    border: none;
+    color: #858585;
+    cursor: pointer;
+    font-size: 18px;
+    transition: color 0.2s;
+  }
+
+  .close-button:hover {
+    color: #e0e0e0;
+  }
+
+  .logs-container {
+    flex: 1;
+    overflow-y: auto;
+    padding: 0;
+  }
+
+  table {
+    width: 100%;
+    border-collapse: collapse;
+  }
+
+  .log-row {
+    border-bottom: 1px solid #2a2a2a;
+    cursor: pointer;
+    transition: background-color 0.15s;
+  }
+
+  .log-row:hover {
+    background-color: #1e1e1e;
+  }
+
+  .log-row.selected {
+    background-color: #1f3a2f;
+  }
+
+  .log-row td {
+    padding: 8px 10px;
+    vertical-align: middle;
+    color: #b4b4b4;
+    white-space: nowrap;
+    overflow: hidden;
+    text-overflow: ellipsis;
+  }
+
+  .method {
+    font-weight: 600;
+    color: #ce9178;
+    min-width: 60px;
+  }
+
+  .route {
+    max-width: 200px;
+  }
+
+  .status {
+    font-weight: 600;
+    min-width: 40px;
+  }
+
+  .time {
+    color: #858585;
+    font-size: 12px;
+    min-width: 80px;
+  }
+
+  .badge {
+    text-align: center;
+    min-width: 30px;
+  }
+
+  .encrypted-badge {
+    display: inline-block;
+    padding: 2px 6px;
+    background: rgba(78, 201, 176, 0.2);
+    border-radius: 3px;
+  }
+
+  .plain-badge {
+    display: inline-block;
+    padding: 2px 6px;
+    background: rgba(206, 145, 120, 0.2);
+    border-radius: 3px;
+  }
+
+  .detail-row td {
+    padding: 0;
+  }
+
+  .detail-panel {
+    padding: 12px;
+    background: #0f0f0f;
+    display: grid;
+    grid-template-columns: 1fr 1fr;
+    gap: 12px;
+    max-height: 200px;
+    overflow-y: auto;
+  }
+
+  .detail-section {
+    border: 1px solid #404040;
+    border-radius: 4px;
+    padding: 8px;
+    background: #161616;
+  }
+
+  .detail-section h4 {
+    margin: 0 0 6px 0;
+    color: #4ec9b0;
+    font-size: 12px;
+  }
+
+  .detail-section.error {
+    border-color: #8b3d3d;
+    background: #3f2424;
+  }
+
+  .detail-section.error h4 {
+    color: #ff8787;
+  }
+
+  .detail-section pre {
+    margin: 0;
+    font-size: 11px;
+    overflow-x: auto;
+    max-height: 160px;
+    color: #b4b4b4;
+    white-space: pre-wrap;
+    word-break: break-word;
+  }
+
+  .empty-state {
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    justify-content: center;
+    height: 200px;
+    color: #858585;
+    text-align: center;
+  }
+
+  .empty-state p {
+    margin: 0;
+  }
+
+  .footer {
+    padding: 8px 12px;
+    border-top: 1px solid #404040;
+    background: #0f0f0f;
+    color: #858585;
+    text-align: center;
+    font-size: 11px;
+  }
+
+  /* Scrollbar styling */
+  .logs-container::-webkit-scrollbar {
+    width: 6px;
+  }
+
+  .logs-container::-webkit-scrollbar-track {
+    background: transparent;
+  }
+
+  .logs-container::-webkit-scrollbar-thumb {
+    background: #404040;
+    border-radius: 3px;
+  }
+
+  .logs-container::-webkit-scrollbar-thumb:hover {
+    background: #515151;
+  }
+
+  @media (max-width: 800px) {
+    .panel {
+      min-width: 350px;
+      max-height: 300px;
+    }
+
+    .detail-panel {
+      grid-template-columns: 1fr;
+    }
+
+    .route {
+      max-width: 100px;
+    }
+  }
+</style>

@@ -1,0 +1,83 @@
+// Minimal server.ts - to be implemented based on actual Hono middleware patterns
+// For now, this is a stub to allow the package to build.
+
+import type { Handle } from "@sveltejs/kit"
+import { autoInitServerEmitter } from "./devtools/emitter"
+import { initDevtools } from "./devtools"
+import type { CiphDevtoolsConfig } from "./devtools"
+
+export { autoInitServerEmitter, initDevtools }
+export type { CiphDevtoolsConfig }
+
+export interface CiphSvelteKitConfig {
+  /**
+   * Server's ECDH P-256 private key in base64url (pkcs8 format).
+   */
+  privateKey: string
+
+  /**
+   * Routes that skip encryption. Default: ["/health", "/ciph", "/ciph/*"]
+   */
+  excludeRoutes?: string[]
+
+  /**
+   * Maximum request/response payload size in bytes. Default: 10 MB
+   */
+  maxPayloadSize?: number
+
+  /**
+   * DevTools configuration for development.
+   */
+  devtools?: CiphDevtoolsConfig
+}
+
+/**
+ * Creates a SvelteKit Handle hook for Ciph transparent encryption.
+ * 
+ * @example
+ * ```typescript
+ * // src/hooks.server.ts
+ * import { ciphHooks } from '@ciph/svelte'
+ * 
+ * export const handle = ciphHooks({
+ *   privateKey: process.env.CIPH_PRIVATE_KEY!,
+ *   devtools: { enabled: process.env.NODE_ENV === 'development' }
+ * })
+ * ```
+ */
+export function ciphHooks(config: CiphSvelteKitConfig): Handle {
+  if (!config.privateKey) {
+    throw new Error("[ciph-svelte] privateKey is required")
+  }
+
+  const excludeRoutes = config.excludeRoutes ?? ["/health", "/ciph", "/ciph/*"]
+
+  if (config.devtools?.enabled) {
+    initDevtools(config.devtools)
+  }
+
+  return async ({ event, resolve }) => {
+    // TODO: Implement decryption of request body
+    // TODO: Implement encryption of response body
+    // For now, pass through
+    return resolve(event)
+  }
+}
+
+/**
+ * Public key endpoint for ECDH key exchange.
+ * Serves the server's public key to clients.
+ * 
+ * @example
+ * // In +server.ts route handler
+ * import { ciphPublicKeyEndpoint } from '@ciph/svelte'
+ * 
+ * export const GET = ciphPublicKeyEndpoint({ publicKey: process.env.CIPH_PUBLIC_KEY! })
+ */
+export function ciphPublicKeyEndpoint(config: { publicKey: string }) {
+  return {
+    GET: () => new Response(JSON.stringify({ publicKey: config.publicKey }), {
+      headers: { "Content-Type": "application/json" },
+    }),
+  }
+}

@@ -1,0 +1,53 @@
+{
+  "name": "@ciph/svelte",
+  "version": "2.0.0",
+  "description": "SvelteKit client and server for Ciph transparent HTTP encryption (ECDH v2)",
+  "main": "./dist/index.js",
+  "module": "./dist/index.mjs",
+  "types": "./dist/index.d.ts",
+  "exports": {
+    ".": {
+      "types": "./dist/index.d.ts",
+      "import": "./dist/index.mjs",
+      "require": "./dist/index.js"
+    },
+    "./devtools": {
+      "import": "./dist/devtools/CiphDevtoolsPanel.svelte",
+      "require": "./dist/devtools/CiphDevtoolsPanel.svelte"
+    }
+  },
+  "files": [
+    "dist"
+  ],
+  "scripts": {
+    "build": "tsup",
+    "dev": "tsup --watch",
+    "test": "echo 'no tests'",
+    "test:coverage": "echo 'no tests'",
+    "type-check": "svelte-check --tsconfig ./tsconfig.json",
+    "lint": "echo 'no lint'"
+  },
+  "peerDependencies": {
+    "@ciph/core": "0.7.0",
+    "axios": "^1.0.0",
+    "svelte": "^4.0.0"
+  },
+  "peerDependenciesMeta": {
+    "@sveltekit/adapter-auto": {
+      "optional": true
+    }
+  },
+  "publishConfig": {
+    "access": "public"
+  },
+  "devDependencies": {
+    "@ciph/core": "0.7.0",
+    "@types/node": "^22.0.0",
+    "@sveltejs/kit": "^2.0.0",
+    "axios": "^1.7.0",
+    "svelte": "^4.2.0",
+    "svelte-check": "^3.0.0",
+    "tsup": "^8.0.0",
+    "typescript": "^5.0.0"
+  }
+}
