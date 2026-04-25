@@ -15,6 +15,7 @@ import {
 var _channel;
 function autoInitClientEmitter() {
   if (typeof globalThis.__ciphClientEmitter__ !== "undefined") return;
+  if (typeof window === "undefined") return;
   const listeners = [];
   if (typeof BroadcastChannel !== "undefined" && !_channel) {
     _channel = new BroadcastChannel("ciph-devtools-logs");

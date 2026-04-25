@@ -24,6 +24,8 @@ let _channel: BroadcastChannel | undefined
  */
 export function autoInitClientEmitter(): void {
   if (typeof globalThis.__ciphClientEmitter__ !== "undefined") return
+  // Skip on server (SSR) — only run in browser
+  if (typeof window === "undefined") return
 
   const listeners: Array<(log: CiphClientLog) => void> = []
 
