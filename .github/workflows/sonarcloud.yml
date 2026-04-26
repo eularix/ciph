@@ -31,13 +31,20 @@ jobs:
 
       - name: Run Go tests with coverage
         run: |
-          cd modules/ciph-go
-          go test -v -coverprofile=coverage.out ./core ./middleware
+          cd modules/ciph-go/core
+          go test -v -coverprofile=coverage.out ./...
+          cd ../middleware
+          go test -v -coverprofile=coverage.out ./...
+          cd ..
+          # Merge coverage files for SonarQube
+          echo "mode: set" > coverage.out
+          tail -n +2 core/coverage.out >> coverage.out
+          tail -n +2 middleware/coverage.out >> coverage.out
 
       - name: Fix coverage file paths
         run: |
           cd modules/ciph-go
-          sed -i 's|^github.com/Eularix/ciph/modules/ciph-go|.|g' coverage.out
+          sed -i 's|^github.com/Eularix/ciph/modules/ciph-go/||g' coverage.out
 
       - name: SonarCloud Scan
         uses: SonarSource/sonarcloud-github-action@master
