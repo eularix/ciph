@@ -22,6 +22,7 @@ pnpm changeset add --packages @ciph/core --type minor --message "Your change des
 
 ### Examples
 
+**npm packages:**
 ```
 .changeset/add-v2-ecdh.md:
 ---
@@ -34,7 +35,17 @@ pnpm changeset add --packages @ciph/core --type minor --message "Your change des
 Implement ECDH v2 asymmetric encryption for enhanced security
 ```
 
-For each package that has changes, list its name and version bump type.
+**Go modules (ciph-go):**
+```
+.changeset/go-feature-x.md:
+---
+"ciph-go": major
+---
+
+Breaking change in Go module API
+```
+
+For each package/module that has changes, list its name and version bump type.
 
 ## Releasing
 

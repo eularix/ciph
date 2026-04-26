@@ -33,26 +33,21 @@ jobs:
         with:
           go-version: '1.21'
 
-      - name: Detect version from git tags
+      - uses: actions/setup-node@v4
+        if: github.event_name == 'push'
+        with:
+          node-version: 20
+
+      - name: Detect version from changesets
         if: github.event_name == 'push'
         run: |
-          # Get latest module tag matching v[0-9]+ pattern
-          LATEST_TAG=$(git tag -l "modules/ciph-go/core/v*" --sort=-version:refname | head -1)
-          if [ -z "$LATEST_TAG" ]; then
-            # Fallback: use current date as version
-            VERSION="0.1.0"
-          else
-            # Extract version from tag (e.g., modules/ciph-go/core/v1.2.3 -> 1.2.3)
-            VERSION=$(echo "$LATEST_TAG" | sed 's/.*v//')
-            # Increment patch version
-            MAJOR=$(echo "$VERSION" | cut -d. -f1)
-            MINOR=$(echo "$VERSION" | cut -d. -f2)
-            PATCH=$(echo "$VERSION" | cut -d. -f3)
-            PATCH=$((PATCH + 1))
-            VERSION="$MAJOR.$MINOR.$PATCH"
-          fi
-          echo "RELEASE_VERSION=$VERSION" >> $GITHUB_ENV
-          echo "✅ Auto-detected version: $VERSION"
+          RESULT=$(node scripts/get-go-version-bump.mjs)
+          CURRENT=$(echo "$RESULT" | jq -r '.currentVersion')
+          BUMP=$(echo "$RESULT" | jq -r '.bumpType')
+          NEXT=$(echo "$RESULT" | jq -r '.nextVersion')
+
+          echo "RELEASE_VERSION=$NEXT" >> $GITHUB_ENV
+          echo "✅ Version bump: $CURRENT → $NEXT (type: $BUMP)"
 
       - name: Use provided version or auto-detected
         if: github.event_name == 'workflow_dispatch'
