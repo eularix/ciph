@@ -2,13 +2,13 @@ name: SonarCloud
 
 on:
   push:
-    branches: [main]
+    branches: [main, dev]
     paths:
       - 'modules/ciph-go/**'
       - '.github/workflows/sonarcloud.yml'
       - 'sonar-project.properties'
   pull_request:
-    branches: [main]
+    branches: [main, dev]
     paths:
       - 'modules/ciph-go/**'
 

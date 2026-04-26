@@ -1,11 +1,16 @@
 name: Go Release
 
 on:
+  push:
+    branches: [main]
+    paths:
+      - 'modules/ciph-go/**'
+      - '.github/workflows/go-release.yml'
   workflow_dispatch:
     inputs:
       version:
         description: 'Release version (e.g., 2.0.0, 2.1.0)'
-        required: true
+        required: false
         type: string
       pre_release:
         description: 'Pre-release (alpha/beta)'
@@ -14,10 +19,6 @@ on:
 
 permissions:
   contents: write
-
-env:
-  RELEASE_VERSION: ${{ github.event.inputs.version }}
-  PRE_RELEASE: ${{ github.event.inputs.pre_release }}
 
 jobs:
   release:
@@ -31,6 +32,37 @@ jobs:
       - uses: actions/setup-go@v4
         with:
           go-version: '1.21'
+
+      - name: Detect version from git tags
+        if: github.event_name == 'push'
+        run: |
+          # Get latest module tag matching v[0-9]+ pattern
+          LATEST_TAG=$(git tag -l "modules/ciph-go/core/v*" --sort=-version:refname | head -1)
+          if [ -z "$LATEST_TAG" ]; then
+            # Fallback: use current date as version
+            VERSION="0.1.0"
+          else
+            # Extract version from tag (e.g., modules/ciph-go/core/v1.2.3 -> 1.2.3)
+            VERSION=$(echo "$LATEST_TAG" | sed 's/.*v//')
+            # Increment patch version
+            MAJOR=$(echo "$VERSION" | cut -d. -f1)
+            MINOR=$(echo "$VERSION" | cut -d. -f2)
+            PATCH=$(echo "$VERSION" | cut -d. -f3)
+            PATCH=$((PATCH + 1))
+            VERSION="$MAJOR.$MINOR.$PATCH"
+          fi
+          echo "RELEASE_VERSION=$VERSION" >> $GITHUB_ENV
+          echo "✅ Auto-detected version: $VERSION"
+
+      - name: Use provided version or auto-detected
+        if: github.event_name == 'workflow_dispatch'
+        run: |
+          if [ -z "${{ github.event.inputs.version }}" ]; then
+            echo "Error: Version required for manual workflow_dispatch"
+            exit 1
+          fi
+          echo "RELEASE_VERSION=${{ github.event.inputs.version }}" >> $GITHUB_ENV
+          echo "PRE_RELEASE=${{ github.event.inputs.pre_release }}" >> $GITHUB_ENV
 
       - name: Validate version format
         run: |
