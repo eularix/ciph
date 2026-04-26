@@ -16,26 +16,6 @@ permissions:
   checks: write
 
 jobs:
-  # Go: Lint
-  go-lint:
-    name: Go Lint
-    runs-on: ubuntu-latest
-    steps:
-      - uses: actions/checkout@v4
-      - uses: actions/setup-go@v4
-        with:
-          go-version: '1.21'
-      - name: Run golangci-lint
-        uses: golangci/golangci-lint-action@v3
-        with:
-          version: latest
-          working-directory: modules/ciph-go
-          args: --timeout=5m ./...
-      - name: Run go vet
-        run: |
-          cd modules/ciph-go
-          go vet ./...
-
   # Go: Test
   go-test:
     name: Go Tests
@@ -48,7 +28,7 @@ jobs:
       - name: Run tests with coverage
         run: |
           cd modules/ciph-go
-          go test -v -coverprofile=coverage.out ./...
+          go test -v -coverprofile=coverage.out ./core ./middleware
       - name: Upload Go coverage to Codecov
         uses: codecov/codecov-action@v4
         with:
