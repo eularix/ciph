@@ -1,0 +1,135 @@
+name: Go Release
+
+on:
+  workflow_dispatch:
+    inputs:
+      version:
+        description: 'Release version (e.g., 2.0.0, 2.1.0)'
+        required: true
+        type: string
+      pre_release:
+        description: 'Pre-release (alpha/beta)'
+        required: false
+        type: string
+
+permissions:
+  contents: write
+
+env:
+  RELEASE_VERSION: ${{ github.event.inputs.version }}
+  PRE_RELEASE: ${{ github.event.inputs.pre_release }}
+
+jobs:
+  release:
+    name: Release Go Modules
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
+
+      - uses: actions/setup-go@v4
+        with:
+          go-version: '1.21'
+
+      - name: Validate version format
+        run: |
+          VERSION="${RELEASE_VERSION}"
+          if ! [[ "$VERSION" =~ ^[0-9]+\.[0-9]+\.[0-9]+$ ]]; then
+            echo "❌ Invalid version format: $VERSION (expected: X.Y.Z)"
+            exit 1
+          fi
+          echo "✅ Valid version: $VERSION"
+
+      - name: Create git tags
+        run: |
+          VERSION="v${RELEASE_VERSION}"
+
+          git config user.name "github-actions[bot]"
+          git config user.email "github-actions[bot]@users.noreply.github.com"
+
+          # Create module-specific tags for go get
+          MODULES=("core" "middleware")
+          for MODULE in "${MODULES[@]}"; do
+            TAG="ciph-go-$MODULE-$VERSION"
+            if [ -n "$PRE_RELEASE" ]; then
+              TAG="$TAG-$PRE_RELEASE"
+            fi
+
+            if [ -d "modules/ciph-go/$MODULE" ] && [ -f "modules/ciph-go/$MODULE/go.mod" ]; then
+              git tag "$TAG"
+              echo "✅ Created tag: $TAG"
+            fi
+          done
+
+      - name: Push tags
+        run: |
+          git push origin --tags
+
+      - name: Create GitHub Release
+        uses: actions/github-script@v7
+        env:
+          RELEASE_VERSION: ${{ env.RELEASE_VERSION }}
+          PRE_RELEASE: ${{ env.PRE_RELEASE }}
+        with:
+          script: |
+            const version = process.env.RELEASE_VERSION;
+            const preRelease = process.env.PRE_RELEASE || '';
+            const isPreRelease = preRelease.length > 0;
+
+            const releaseBody = `## Go Modules Release v${version}
+
+### Packages
+- \`github.com/Eularix/ciph/modules/ciph-go/core@v${version}\`
+- \`github.com/Eularix/ciph/modules/ciph-go/middleware@v${version}\`
+
+### Installation
+\`\`\`bash
+go get github.com/Eularix/ciph/modules/ciph-go/core@v${version}
+go get github.com/Eularix/ciph/modules/ciph-go/middleware@v${version}
+\`\`\`
+
+### Features
+- ECDH P-256 asymmetric encryption
+- AES-256-GCM encryption/decryption
+- Fingerprint-based device binding
+- Framework-agnostic net/http middleware
+
+Works with: Fiber, Gin, Echo, and all Go frameworks supporting net/http.
+`;
+
+            await github.rest.repos.createRelease({
+              owner: context.repo.owner,
+              repo: context.repo.repo,
+              tag_name: isPreRelease ? `ciph-go-v${version}-${preRelease}` : `ciph-go-v${version}`,
+              name: `Go Modules v${version}${isPreRelease ? '-' + preRelease : ''}`,
+              body: releaseBody,
+              draft: false,
+              prerelease: isPreRelease,
+            }).catch(err => {
+              console.log(`Release might already exist: ${err.message}`);
+            });
+
+      - name: Print release summary
+        env:
+          RELEASE_VERSION: ${{ env.RELEASE_VERSION }}
+          PRE_RELEASE: ${{ env.PRE_RELEASE }}
+        run: |
+          VERSION="v${RELEASE_VERSION}"
+
+          echo "## 📦 Go Release Summary" >> $GITHUB_STEP_SUMMARY
+          echo "" >> $GITHUB_STEP_SUMMARY
+          echo "### Version: $VERSION" >> $GITHUB_STEP_SUMMARY
+          if [ -n "$PRE_RELEASE" ]; then
+            echo "### Pre-release: $PRE_RELEASE" >> $GITHUB_STEP_SUMMARY
+          fi
+          echo "" >> $GITHUB_STEP_SUMMARY
+          echo "### Installation" >> $GITHUB_STEP_SUMMARY
+          echo "\`\`\`bash" >> $GITHUB_STEP_SUMMARY
+          echo "go get github.com/Eularix/ciph/modules/ciph-go/core@$VERSION" >> $GITHUB_STEP_SUMMARY
+          echo "go get github.com/Eularix/ciph/modules/ciph-go/middleware@$VERSION" >> $GITHUB_STEP_SUMMARY
+          echo "\`\`\`" >> $GITHUB_STEP_SUMMARY
+          echo "" >> $GITHUB_STEP_SUMMARY
+          echo "### Git Tags Created" >> $GITHUB_STEP_SUMMARY
+          echo "- \`ciph-go-core-$VERSION\`" >> $GITHUB_STEP_SUMMARY
+          echo "- \`ciph-go-middleware-$VERSION\`" >> $GITHUB_STEP_SUMMARY

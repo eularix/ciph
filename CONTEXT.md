@@ -18,26 +18,25 @@ Ciph is:
 - A DX tool (DevTools panels for readable logs)
 - Not a replacement for TLS/HTTPS
 - Not an auth/session solution
-- Not a WebSocket or file upload/download solution in v1
+- Not a WebSocket or file upload/download solution
 
-## Monorepo Structure (Target)
+## Monorepo Structure
 
 ```text
 ciph/
 ├── packages/
-│   ├── core/              → @ciph/core
-│   ├── client/            → @ciph/client (HTTP client wrapper)
+│   ├── core/              → @ciph/core (crypto primitives)
+│   ├── client/            → @ciph/client (axios wrapper)
+│   ├── react/             → @ciph/react (React HTTP client)
 │   ├── hono/              → @ciph/hono (Hono middleware)
 │   ├── devtools-client/   → @ciph/devtools-client (floating panel)
 │   └── devtools-server/   → @ciph/devtools-server (backend inspector)
-├── modules/
-│   └── ciph-go/           → Go module (future)
-├── examples/
-│   ├── react-hono/
-│   ├── vue-express/
-│   └── svelte-hono/
+├── example/
+│   ├── next/              → Next.js example
+│   ├── react/             → React + Hono example
+│   ├── svelte/            → Svelte example
+│   └── vue/               → Vue example
 ├── docs/
-├── package.json
 ├── pnpm-workspace.yaml
 ├── turbo.json
 └── CONTEXT.md
@@ -49,18 +48,20 @@ ciph/
 @ciph/devtools-client
         │
         ▼ (subscribes to events)
-   @ciph/client ──────────────────────────────────┐
-        │                                         │
-        ▼ depends on                              │
-   @ciph/core  ◀───────────────  @ciph/hono       │
-        ▲                               │         │
-        │ (optional perf upgrade)       ▼         │
-  @ciph/core-native          @ciph/devtools-server (future)
+   @ciph/client ◀─────────────────┐
+   @ciph/react                    │
+        │                         │
+        ▼ depends on              │
+   @ciph/core ◀──────  @ciph/hono │
+                            │     │
+                            ▼     │
+                 @ciph/devtools-server
 ```
 
 Rules:
 - No circular dependencies.
 - @ciph/core must not depend on any other package in this monorepo.
+- @ciph/react is framework-specific wrapper around @ciph/client.
 
 ## Naming & Registry
 
@@ -70,11 +71,12 @@ All JavaScript/TypeScript packages are published under the `@ciph` scope:
 |-----------------------|-----------------------|
 | Core crypto           | `@ciph/core`          |
 | HTTP client wrapper   | `@ciph/client`        |
+| React HTTP client     | `@ciph/react`         |
 | Hono middleware       | `@ciph/hono`          |
 | Devtools (frontend)   | `@ciph/devtools-client` |
 | Devtools (backend)    | `@ciph/devtools-server` |
 
-All share the same version number (fixed versioning) and are managed via Changesets.
+All share the same version number (fixed versioning, v2.0.0+) and are managed via Changesets.
 
 ## Tooling & Conventions
 
@@ -118,26 +120,38 @@ packages/<name>/dist/
   └── index.d.ts    (types)
 ```
 
-## Shared Secret Convention
+## Server Key Pair Convention (ECDH v2)
 
-- Nama env var: `CIPH_SECRET`
-- Harus identik di frontend dan backend
-- Minimal 32 karakter
-- Disimpan di Secret Manager (production), bukan di git
-
+**Backend .env:**
 ```env
-CIPH_SECRET=your-32-char-minimum-secret-here
+CIPH_PRIVATE_KEY=base64url-encoded-P256-private-key
 ```
+
+**Frontend .env:**
+```env
+VITE_CIPH_SERVER_PUBLIC_KEY=base64url-encoded-P256-public-key
+```
+
+**Rules:**
+- Private key: backend only, never exposed, min 32 chars when base64url decoded
+- Public key: safe to expose, distributed to frontend via env var or `/ciph/public-key` endpoint
+- Store private key in Secret Manager (production), never in git
+- Generate via: `npx ciph generate-keys`
 
 ## Key Concepts (Quick Reference)
 
-| Term            | Penjelasan                                       |
-|-----------------|--------------------------------------------------|
-| `CIPH_SECRET`   | Raw secret dari `.env`, bukan AES key langsung   |
-| `fingerprint`   | SHA-256 dari komponen device (UA, screen, tz, IP) |
-| `derived key`   | HKDF(`CIPH_SECRET`, fingerprint) → 32-byte key   |
-| `X-Fingerprint` | Header HTTP berisi fingerprint terenkripsi       |
-| `ciphertext`    | `base64url(IV + AuthTag + EncryptedData)`        |
+| Term            | Description |
+|-----------------|-------------|
+| `CIPH_PRIVATE_KEY` | Server private key (P-256), never exposed |
+| `VITE_CIPH_SERVER_PUBLIC_KEY` | Server public key (P-256), safe to expose to frontend |
+| `client ephemeral keypair` | Generated per-session, kept in memory, regenerated on CIPH003 |
+| `raw_shared_secret` | Output of ECDH(client_privKey, server_pubKey) |
+| `session_key` | HKDF(raw_shared_secret, "", "ciph-v2-session") → 32 bytes |
+| `fingerprint` | SHA-256 of device components (UA, screen, timezone, IP, ...) |
+| `request_key` | HKDF(session_key, fingerprint_hash, "ciph-v2-request") → 32 bytes |
+| `X-Client-PublicKey` | Header: plaintext client ephemeral public key (base64url) |
+| `X-Fingerprint` | Header: encrypted fingerprint (base64url, encrypted with session_key) |
+| `ciphertext` | `base64url(IV[12] + AuthTag[16] + EncryptedData[n])` |
 
 ## DevTools Global Rules
 
@@ -154,16 +168,16 @@ CIPH_SECRET=your-32-char-minimum-secret-here
 
 ## Error Handling Philosophy
 
-- Semua error pakai `CiphError` dengan `code` (CIPH001–CIPH006).
-- HTTP error body selalu `{ code, message }` (tanpa stack trace).
-- Client otomatis retry **hanya** untuk fingerprint mismatch (CIPH003) sekali.
-- Error lain langsung dilempar ke caller.
+- All errors use `CiphError` with code (CIPH001–CIPH007).
+- HTTP error body always `{ code, message }` (no stack traces).
+- Client auto-retries ONLY for fingerprint mismatch (CIPH003) once (invalidates ephemeral keypair + fingerprint).
+- All other errors thrown directly to caller.
+- CIPH007: ECDH key derivation failure (malformed client pubkey) — no retry.
 
-## Milestones (Ringkas)
+## Milestones
 
-- v0.1.0 — `@ciph/core`, `@ciph/client`, `@ciph/hono`
-- v0.2.0 — `@ciph/devtools-client`, `@ciph/devtools-server`
-- v0.3.0+ — adapter lain & native core
+- v2.0.0 — **ECDH P-256 asymmetric**, all packages (`@ciph/core`, `@ciph/client`, `@ciph/react`, `@ciph/hono`, devtools, examples)
+- v2.1.0+ — More adapters (Express, NestJS), key rotation, X25519 migration path
 
 ## Golden Rule Untuk Implementasi
 
