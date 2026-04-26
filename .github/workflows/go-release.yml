@@ -48,10 +48,10 @@ jobs:
           git config user.name "github-actions[bot]"
           git config user.email "github-actions[bot]@users.noreply.github.com"
 
-          # Create module-specific tags for go get
+          # Create module-specific tags for go get (with module path prefix)
           MODULES=("core" "middleware")
           for MODULE in "${MODULES[@]}"; do
-            TAG="ciph-go-$MODULE-$VERSION"
+            TAG="modules/ciph-go/$MODULE/$VERSION"
             if [ -n "$PRE_RELEASE" ]; then
               TAG="$TAG-$PRE_RELEASE"
             fi
@@ -89,19 +89,16 @@ go get github.com/Eularix/ciph/modules/ciph-go/core@v${version}
 go get github.com/Eularix/ciph/modules/ciph-go/middleware@v${version}
 \`\`\`
 
-### Features
-- ECDH P-256 asymmetric encryption
-- AES-256-GCM encryption/decryption
-- Fingerprint-based device binding
-- Framework-agnostic net/http middleware
-
-Works with: Fiber, Gin, Echo, and all Go frameworks supporting net/http.
+See CHANGELOG.md for feature details.
 `;
+
+            // Use core module tag as primary release tag
+            const releaseTag = isPreRelease ? `modules/ciph-go/core/v${version}-${preRelease}` : `modules/ciph-go/core/v${version}`;
 
             await github.rest.repos.createRelease({
               owner: context.repo.owner,
               repo: context.repo.repo,
-              tag_name: isPreRelease ? `ciph-go-v${version}-${preRelease}` : `ciph-go-v${version}`,
+              tag_name: releaseTag,
               name: `Go Modules v${version}${isPreRelease ? '-' + preRelease : ''}`,
               body: releaseBody,
               draft: false,
@@ -131,5 +128,5 @@ Works with: Fiber, Gin, Echo, and all Go frameworks supporting net/http.
           echo "\`\`\`" >> $GITHUB_STEP_SUMMARY
           echo "" >> $GITHUB_STEP_SUMMARY
           echo "### Git Tags Created" >> $GITHUB_STEP_SUMMARY
-          echo "- \`ciph-go-core-$VERSION\`" >> $GITHUB_STEP_SUMMARY
-          echo "- \`ciph-go-middleware-$VERSION\`" >> $GITHUB_STEP_SUMMARY
+          echo "- \`modules/ciph-go/core/$VERSION\`" >> $GITHUB_STEP_SUMMARY
+          echo "- \`modules/ciph-go/middleware/$VERSION\`" >> $GITHUB_STEP_SUMMARY
