@@ -62,7 +62,7 @@ interface CiphDevtoolsConfig {
 ```typescript
 app.use(CiphPlugin, {
   baseURL: import.meta.env.VITE_API_URL,
-  serverPublicKey: import.meta.env.VITE_CIPH_SERVER_PUBLIC_KEY,
+  serverPublicKey: import.meta.env.CIPH_PUBLIC_KEY,
   fingerprintOptions: {
     includeScreen: true,
     includeTimezone: true,

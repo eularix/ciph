@@ -27,7 +27,7 @@ import { createClient } from '@ciph/react'
 
 export const ciph = createClient({
   baseURL: import.meta.env.VITE_API_URL,
-  serverPublicKey: import.meta.env.VITE_CIPH_SERVER_PUBLIC_KEY,
+  serverPublicKey: import.meta.env.CIPH_PUBLIC_KEY,
   fingerprintOptions: {
     includeScreen: true,
     includeTimezone: true,
@@ -101,7 +101,7 @@ interface CiphClientConfig {
 ```bash
 # .env.local (Vite)
 VITE_API_URL=https://api.example.com
-VITE_CIPH_SERVER_PUBLIC_KEY=<base64url-encoded-public-key>
+CIPH_PUBLIC_KEY=<base64url-encoded-public-key>
 ```
 
 **Get server public key:**
@@ -256,7 +256,7 @@ import { createClient } from '@ciph/react'
 
 export const ciph = createClient({
   baseURL: 'https://api.example.com',
-  serverPublicKey: import.meta.env.VITE_CIPH_SERVER_PUBLIC_KEY,
+  serverPublicKey: import.meta.env.CIPH_PUBLIC_KEY,
 })
 ```
 

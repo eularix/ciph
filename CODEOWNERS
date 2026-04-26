@@ -1,0 +1,41 @@
+# Ciph Codeowners
+
+# Default owners
+* @eularix
+
+# Core packages (JS/TS)
+/packages/core/ @eularix
+/packages/client/ @eularix
+/packages/react/ @eularix
+/packages/hono/ @eularix
+/packages/devtools-client/ @eularix
+/packages/devtools-server/ @eularix
+
+# Go modules
+/modules/ciph-go/ @eularix
+/modules/ciph-go/core/ @eularix
+/modules/ciph-go/middleware/ @eularix
+
+# Examples
+/example/ @eularix
+/example/next/ @eularix
+/example/react/ @eularix
+/example/svelte/ @eularix
+/example/vue/ @eularix
+
+# Documentation
+/docs/ @eularix
+/CLAUDE.md @eularix
+/CONTEXT.md @eularix
+
+# CI/CD & Config
+/.github/workflows/ @eularix
+/sonar-project.properties @eularix
+/.github/workflows/ci.yml @eularix
+/.github/workflows/ci-go.yml @eularix
+/.github/workflows/sonarcloud.yml @eularix
+
+# Root configs
+/package.json @eularix
+/pnpm-workspace.yaml @eularix
+/turbo.json @eularix

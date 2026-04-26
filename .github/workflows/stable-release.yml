@@ -234,29 +234,15 @@ jobs:
           
           # Create new changelog entry
           NEW_ENTRY="## v${VERSION} ($(date -u +\"%B %Y\")) - Stable Release
-
-### ✨ Features
-
-- All packages released with stable versions
-- ECDH v2 encryption active
-- Production-ready
-
-### 📦 Packages Updated
-
-"
           
           # Add list of packages
           for DIR in "${DIRS[@]}"; do
-            PKG_NAME=\$(grep '"name"' "packages/\$DIR/package.json" | grep -oE '@ciph/[^"]+' | head -1)
-            NEW_ENTRY+="- \`\$PKG_NAME\`
-"
+            PKG_NAME=$(grep '"name"' "packages/$DIR/package.json" | grep -oE '@ciph/[^"]+' | head -1)
+            [ -n "$PKG_NAME" ] && NEW_ENTRY+="- \`$PKG_NAME\`"$'\n'
           done
-          
-          NEW_ENTRY+="
----
 
-"
-          
+          NEW_ENTRY+=$'\n---\n'
+
           # Prepend to changelog
           if [ -f "$CHANGELOG_FILE" ]; then
             # Find the position after the frontmatter and first title

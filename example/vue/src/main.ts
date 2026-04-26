@@ -7,7 +7,7 @@ const app = createApp(App)
 
 app.use(CiphPlugin, {
   baseURL: import.meta.env.VITE_API_URL as string ?? 'http://localhost:4008',
-  serverPublicKey: import.meta.env.VITE_CIPH_SERVER_PUBLIC_KEY as string ?? '',
+  serverPublicKey: import.meta.env.CIPH_PUBLIC_KEY as string ?? '',
   devtools: {
     defaultOpen: true,
     position: 'bottom',

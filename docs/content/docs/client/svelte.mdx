@@ -65,7 +65,7 @@ Contributions welcome!
 
   const ciph = createClient({
     baseURL: 'http://localhost:4008',
-    serverPublicKey: import.meta.env.VITE_CIPH_SERVER_PUBLIC_KEY,
+    serverPublicKey: import.meta.env.CIPH_PUBLIC_KEY,
   });
 
   onMount(async () => {
@@ -99,7 +99,7 @@ import { createClient } from '@ciph/client';
 export async function load() {
   const ciph = createClient({
     baseURL: 'http://localhost:4008',
-    serverPublicKey: process.env.VITE_CIPH_SERVER_PUBLIC_KEY!,
+    serverPublicKey: process.env.CIPH_PUBLIC_KEY!,
   });
 
   const res = await ciph.get('/api/employees');

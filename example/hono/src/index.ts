@@ -35,9 +35,9 @@ app.use('/*', cors({
 }))
 
 // v2 ECDH public key endpoint — clients fetch this on first request
-// When VITE_CIPH_SERVER_PUBLIC_KEY is set in frontend env, this endpoint is not needed
-// Set in .env as VITE_CIPH_SERVER_PUBLIC_KEY (from key generation output)
-const serverPublicKey = process.env.VITE_CIPH_SERVER_PUBLIC_KEY!
+// When CIPH_PUBLIC_KEY is set in frontend env, this endpoint is not needed
+// Set in .env as CIPH_PUBLIC_KEY (from key generation output)
+const serverPublicKey = process.env.CIPH_PUBLIC_KEY!
 app.get('/ciph-public-key', ciphPublicKeyEndpoint(serverPublicKey))
 
 // v2 ECDH — uses privateKey from env (no shared secret on frontend)

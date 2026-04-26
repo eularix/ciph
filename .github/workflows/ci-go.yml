@@ -1,0 +1,66 @@
+name: CI-GO
+
+on:
+  push:
+    branches: [main]
+    paths:
+      - 'modules/ciph-go/**'
+      - '.github/workflows/ci-go.yml'
+  pull_request:
+    branches: [main]
+    paths:
+      - 'modules/ciph-go/**'
+
+permissions:
+  contents: read
+  checks: write
+
+jobs:
+  # Go: Test
+  go-test:
+    name: Go Tests
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-go@v4
+        with:
+          go-version: '1.21'
+      - name: Run tests with coverage
+        run: |
+          cd modules/ciph-go/core
+          go test -v -coverprofile=coverage.out ./...
+          cd ../middleware
+          go test -v -coverprofile=coverage.out ./...
+          cd ..
+          # Merge coverage files
+          echo "mode: set" > coverage.out
+          tail -n +2 core/coverage.out >> coverage.out
+          tail -n +2 middleware/coverage.out >> coverage.out
+      - name: Upload Go coverage to Codecov
+        uses: codecov/codecov-action@v4
+        with:
+          files: ./modules/ciph-go/coverage.out
+          flags: go
+          fail_ci_if_error: false
+
+  # Go: Build
+  go-build:
+    name: Go Build
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-go@v4
+        with:
+          go-version: '1.21'
+      - name: Build core package
+        run: |
+          cd modules/ciph-go/core
+          go build -v ./...
+      - name: Build middleware package
+        run: |
+          cd modules/ciph-go/middleware
+          go build -v ./...
+      - name: Verify go.sum
+        run: |
+          cd modules/ciph-go
+          go mod verify

@@ -89,7 +89,7 @@ export default function GenerateKeyPage() {
     if (!keyPair) return;
     const privateVal = privateKeyFormat === 'pkcs8' ? keyPair.privateKey.pkcs8 : keyPair.privateKey.jwk;
     const publicVal = publicKeyFormat === 'raw' ? keyPair.publicKey.raw : keyPair.publicKey.jwk;
-    const text = type === 'private' ? `CIPH_PRIVATE_KEY=${privateVal}` : `VITE_CIPH_SERVER_PUBLIC_KEY=${publicVal}`;
+    const text = type === 'private' ? `CIPH_PRIVATE_KEY=${privateVal}` : `CIPH_PUBLIC_KEY=${publicVal}`;
     await navigator.clipboard.writeText(text);
     setCopiedState('env');
     setTimeout(() => setCopiedState(null), 2000);
@@ -212,7 +212,7 @@ export default function GenerateKeyPage() {
 
             <div className="gk-section-label" style={{ marginTop: 16, marginBottom: 16 }}>.env (frontend)</div>
             <div className="gk-env-row">
-              <span style={{ flexShrink: 0 }}>VITE_CIPH_SERVER_PUBLIC_KEY=</span>
+              <span style={{ flexShrink: 0 }}>CIPH_PUBLIC_KEY=</span>
               <button className="gk-env-copy" onClick={() => copyEnv('public')}>
                 {copiedState === 'env' ? '✓' : 'copy'}
               </button>

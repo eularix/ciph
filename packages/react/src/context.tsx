@@ -68,7 +68,7 @@ export interface CiphProviderProps
  *
  * @example
  * ```tsx
- * <CiphProvider baseURL={import.meta.env.VITE_API_URL} serverPublicKey={import.meta.env.VITE_CIPH_SERVER_PUBLIC_KEY}>
+ * <CiphProvider baseURL={import.meta.env.VITE_API_URL} serverPublicKey={import.meta.env.CIPH_PUBLIC_KEY}>
  *   <App />
  * </CiphProvider>
  * ```
