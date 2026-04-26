@@ -40,7 +40,7 @@ jobs:
           version: bun changeset version
           commit: 'chore: bump package versions'
           title: 'chore: bump package versions'
-          createGithubReleases: aggregate
+          createGithubReleases: true
         env:
           GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
 
@@ -81,7 +81,7 @@ jobs:
         uses: changesets/action@v1
         with:
           publish: bun changeset publish
-          createGithubReleases: aggregate
+          createGithubReleases: true
         env:
           GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
 

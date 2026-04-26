@@ -107,14 +107,14 @@ jobs:
             const releaseBody = `## Go Modules Release v${version}
 
 ### Packages
-- \`github.com/Eularix/ciph/modules/ciph-go/core@v${version}\`
-- \`github.com/Eularix/ciph/modules/ciph-go/middleware@v${version}\`
+- \\\`github.com/Eularix/ciph/modules/ciph-go/core@v${version}\\\`
+- \\\`github.com/Eularix/ciph/modules/ciph-go/middleware@v${version}\\\`
 
 ### Installation
-\`\`\`bash
+\\\`\\\`\\\`bash
 go get github.com/Eularix/ciph/modules/ciph-go/core@v${version}
 go get github.com/Eularix/ciph/modules/ciph-go/middleware@v${version}
-\`\`\`
+\\\`\\\`\\\`
 
 See CHANGELOG.md for feature details.
 `;
