@@ -4,6 +4,6 @@ import { createClient } from '@ciph/react'
 
 export const ciph = createClient({
   baseURL: import.meta.env.VITE_API_URL as string,
-  serverPublicKey: import.meta.env.VITE_CIPH_SERVER_PUBLIC_KEY as string,
+  serverPublicKey: import.meta.env.CIPH_PUBLIC_KEY as string,
 })
 

@@ -24,7 +24,7 @@ const app = createApp(App)
 
 app.use(CiphPlugin, {
   baseURL: import.meta.env.VITE_API_URL,
-  serverPublicKey: import.meta.env.VITE_CIPH_SERVER_PUBLIC_KEY,
+  serverPublicKey: import.meta.env.CIPH_PUBLIC_KEY,
 })
 
 app.mount('#app')
@@ -98,7 +98,7 @@ In development, the floating DevTools panel is shown automatically. Configure it
 ```typescript
 app.use(CiphPlugin, {
   baseURL: import.meta.env.VITE_API_URL,
-  serverPublicKey: import.meta.env.VITE_CIPH_SERVER_PUBLIC_KEY,
+  serverPublicKey: import.meta.env.CIPH_PUBLIC_KEY,
   devtools: {
     defaultOpen: true,
     position: 'bottom-right', // 'bottom-right' | 'bottom-left' | 'top-right' | 'top-left' | 'bottom' | 'top' | 'left' | 'right'

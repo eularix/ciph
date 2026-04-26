@@ -42,7 +42,7 @@
 ```
 Server generates once:
   privKey  →  stored in CIPH_PRIVATE_KEY env var (base64url, never exposed)
-  pubKey   →  distributed to clients (VITE_CIPH_SERVER_PUBLIC_KEY or fetched)
+  pubKey   →  distributed to clients (CIPH_PUBLIC_KEY or fetched)
 ```
 
 ### Client Key Pair (ephemeral, per-session)
@@ -148,7 +148,7 @@ Two options (implement both):
 
 ```env
 # Frontend
-VITE_CIPH_SERVER_PUBLIC_KEY=<base64url encoded P-256 public key>
+CIPH_PUBLIC_KEY=<base64url encoded P-256 public key>
 
 # Backend
 CIPH_PRIVATE_KEY=<base64url encoded P-256 private key>
@@ -366,7 +366,7 @@ npx ciph generate-keys
 # CIPH_PRIVATE_KEY=<base64url>
 #
 # Add to frontend .env:
-# VITE_CIPH_SERVER_PUBLIC_KEY=<base64url>
+# CIPH_PUBLIC_KEY=<base64url>
 ```
 
 ---
