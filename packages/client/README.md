@@ -154,7 +154,7 @@ import { createClient } from '@ciph/client'
 
 export const ciph = createClient({
   baseURL: import.meta.env.VITE_API_URL,
-  serverPublicKey: import.meta.env.VITE_CIPH_SERVER_PUBLIC_KEY,
+  serverPublicKey: import.meta.env.CIPH_PUBLIC_KEY,
 })
 
 // components/UserList.vue
@@ -185,7 +185,7 @@ import { createClient } from '@ciph/client'
 
 export const ciph = createClient({
   baseURL: import.meta.env.VITE_API_URL,
-  serverPublicKey: import.meta.env.VITE_CIPH_SERVER_PUBLIC_KEY,
+  serverPublicKey: import.meta.env.CIPH_PUBLIC_KEY,
 })
 
 // src/routes/+page.svelte

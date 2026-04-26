@@ -129,7 +129,7 @@ CIPH_PRIVATE_KEY=base64url-encoded-P256-private-key
 
 **Frontend .env:**
 ```env
-VITE_CIPH_SERVER_PUBLIC_KEY=base64url-encoded-P256-public-key
+CIPH_PUBLIC_KEY=base64url-encoded-P256-public-key
 ```
 
 **Rules:**
@@ -143,7 +143,7 @@ VITE_CIPH_SERVER_PUBLIC_KEY=base64url-encoded-P256-public-key
 | Term            | Description |
 |-----------------|-------------|
 | `CIPH_PRIVATE_KEY` | Server private key (P-256), never exposed |
-| `VITE_CIPH_SERVER_PUBLIC_KEY` | Server public key (P-256), safe to expose to frontend |
+| `CIPH_PUBLIC_KEY` | Server public key (P-256), safe to expose to frontend |
 | `client ephemeral keypair` | Generated per-session, kept in memory, regenerated on CIPH003 |
 | `raw_shared_secret` | Output of ECDH(client_privKey, server_pubKey) |
 | `session_key` | HKDF(raw_shared_secret, "", "ciph-v2-session") → 32 bytes |

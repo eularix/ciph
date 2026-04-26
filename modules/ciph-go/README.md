@@ -162,14 +162,14 @@ ciph-keygen generate
 
 # Output:
 # CIPH_PRIVATE_KEY=base64url...
-# VITE_CIPH_SERVER_PUBLIC_KEY=base64url...
+# CIPH_PUBLIC_KEY=base64url...
 ```
 
 Or via Go:
 ```go
 keyPair, _ := core.GenerateServerKeyPair()
 fmt.Println("CIPH_PRIVATE_KEY=" + keyPair.PrivateKey)
-fmt.Println("VITE_CIPH_SERVER_PUBLIC_KEY=" + keyPair.PublicKey)
+fmt.Println("CIPH_PUBLIC_KEY=" + keyPair.PublicKey)
 ```
 
 ## Error Codes

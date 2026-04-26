@@ -23,7 +23,7 @@ const goEnv = loadEnv(path.join(__dirname, "go", ".env"))
 const reactEnv = loadEnv(path.join(__dirname, "react", ".env"))
 
 const goPrivKey = goEnv.CIPH_PRIVATE_KEY
-const reactPubKey = reactEnv.VITE_CIPH_SERVER_PUBLIC_KEY
+const reactPubKey = reactEnv.CIPH_PUBLIC_KEY
 
 console.log("=== ECDH Test ===\n")
 console.log(`Go private key (PKCS8, first 50 chars): ${goPrivKey.slice(0, 50)}...`)

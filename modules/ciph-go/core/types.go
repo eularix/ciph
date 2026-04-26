@@ -53,31 +53,56 @@ type FingerprintResult struct {
 	Components FingerprintComponents
 }
 
-type CiphClientLog struct {
-	Method      string
-	URL         string
-	Status      int
-	RequestBody string  // encrypted, truncated
-	ResponseBody string // encrypted, truncated
-	Fingerprint string  // truncated
-	Timestamp   int64
-	ECDH        *ECDHLogInfo
+// CiphServerLog matches the @ciph/core CiphServerLog interface.
+// JSON field names match the TypeScript interface for interop with devtools inspector.
+type CiphServerLog struct {
+	ID        string              `json:"id"`
+	Method    string              `json:"method"`
+	Route     string              `json:"route"`
+	Status    int                 `json:"status"`
+	Duration  int64               `json:"duration"` // milliseconds
+	Timestamp string              `json:"timestamp"`
+	Request   CiphServerLogReq    `json:"request"`
+	Response  CiphServerLogRes    `json:"response"`
+	Fingerprint CiphServerLogFP   `json:"fingerprint"`
+	Excluded  bool                `json:"excluded"`
+	Error     *string             `json:"error"` // error code or null
+	ECDH      *ECDHLogInfo        `json:"ecdh,omitempty"`
 }
 
-type CiphServerLog struct {
-	Method      string
-	URL         string
-	Status      int
-	RequestBody string  // encrypted, truncated
-	ResponseBody string // encrypted, truncated
-	Fingerprint string  // truncated
-	Timestamp   int64
-	ECDH        *ECDHLogInfo
+type CiphServerLogReq struct {
+	PlainBody     interface{}       `json:"plainBody"`
+	EncryptedBody *string           `json:"encryptedBody"`
+	Headers       map[string]string `json:"headers"`
+	IP            string            `json:"ip"`
+	UserAgent     string            `json:"userAgent"`
+}
+
+type CiphServerLogRes struct {
+	PlainBody     interface{} `json:"plainBody"`
+	EncryptedBody string      `json:"encryptedBody"`
+}
+
+type CiphServerLogFP struct {
+	Value   string `json:"value"`
+	IPMatch bool   `json:"ipMatch"`
+	UAMatch bool   `json:"uaMatch"`
+}
+
+type CiphClientLog struct {
+	Method      string `json:"method"`
+	URL         string `json:"url"`
+	Status      int    `json:"status"`
+	RequestBody string `json:"requestBody"`  // encrypted, truncated
+	ResponseBody string `json:"responseBody"` // encrypted, truncated
+	Fingerprint string `json:"fingerprint"`  // truncated
+	Timestamp   int64  `json:"timestamp"`
+	ECDH        *ECDHLogInfo `json:"ecdh,omitempty"`
 }
 
 type ECDHLogInfo struct {
-	ClientPublicKey string // truncated for display
-	SharedSecretDerived bool
+	ClientPublicKey    string `json:"clientPublicKey"` // truncated for display
+	SharedSecretDerived bool  `json:"sharedSecretDerived"`
 }
 
 type EncryptRequest struct {

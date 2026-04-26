@@ -23,7 +23,7 @@ const goEnv = loadEnv(path.join(__dirname, ".env"))
 const reactEnv = loadEnv(path.join(__dirname, "../react/.env"))
 
 const goPrivateKey = goEnv.CIPH_PRIVATE_KEY
-const reactPublicKey = reactEnv.VITE_CIPH_SERVER_PUBLIC_KEY
+const reactPublicKey = reactEnv.CIPH_PUBLIC_KEY
 
 console.log("=== Key Sync Debug ===\n")
 console.log(`Go private key: ${goPrivateKey}`)

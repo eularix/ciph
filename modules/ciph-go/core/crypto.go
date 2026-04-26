@@ -4,6 +4,7 @@ import (
 	"crypto/aes"
 	"crypto/cipher"
 	"crypto/ecdh"
+	"crypto/ecdsa"
 	"crypto/rand"
 	"crypto/sha256"
 	"crypto/x509"
@@ -63,6 +64,68 @@ func GenerateClientKeyPair() (*KeyPair, error) {
 	}, nil
 }
 
+// parsePrivateKey parses a private key from bytes.
+// Supports PKCS8 format (from @ciph/core generateKeyPair) and raw 32-byte format.
+// x509.ParsePKCS8PrivateKey returns *ecdsa.PrivateKey which we convert to *ecdh.PrivateKey.
+func parsePrivateKey(privKeyBytes []byte) (*ecdh.PrivateKey, error) {
+	// Try PKCS8 first (standard format from @ciph/core)
+	privKeyInterface, err := x509.ParsePKCS8PrivateKey(privKeyBytes)
+	if err == nil {
+		// x509 returns *ecdsa.PrivateKey, convert to *ecdh.PrivateKey
+		switch k := privKeyInterface.(type) {
+		case *ecdsa.PrivateKey:
+			ecdhKey, err := k.ECDH()
+			if err != nil {
+				return nil, &CiphError{
+					Code:    CIPH007,
+					Message: "failed to convert ECDSA key to ECDH",
+					Err:     err,
+				}
+			}
+			return ecdhKey, nil
+		case *ecdh.PrivateKey:
+			return k, nil
+		default:
+			return nil, &CiphError{
+				Code:    CIPH007,
+				Message: "private key is not P-256 ECDH",
+			}
+		}
+	}
+
+	// Fallback: try raw 32-byte format (client ephemeral keys)
+	privKey, err := ecdh.P256().NewPrivateKey(privKeyBytes)
+	if err != nil {
+		return nil, &CiphError{
+			Code:    CIPH007,
+			Message: "invalid private key format (not PKCS8 or raw)",
+			Err:     err,
+		}
+	}
+	return privKey, nil
+}
+
+// DerivePublicKeyFromPrivate derives the public key from a PKCS8-encoded private key.
+// Used to serve the public key at /ciph-public-key endpoint.
+func DerivePublicKeyFromPrivate(privateKeyBase64 string) (string, error) {
+	privKeyBytes, err := base64.RawURLEncoding.DecodeString(privateKeyBase64)
+	if err != nil {
+		return "", &CiphError{
+			Code:    CIPH002,
+			Message: "failed to decode private key",
+			Err:     err,
+		}
+	}
+
+	privKey, err := parsePrivateKey(privKeyBytes)
+	if err != nil {
+		return "", err
+	}
+
+	pubKeyBytes := privKey.PublicKey().Bytes()
+	return base64.RawURLEncoding.EncodeToString(pubKeyBytes), nil
+}
+
 // DeriveSharedSecret performs ECDH with private key and peer public key.
 // privateKeyBase64 can be PKCS8 format (from GenerateServerKeyPair or @ciph/core)
 // peerPublicKeyBase64 must be raw uncompressed P-256 public key (65 bytes).
@@ -86,31 +149,9 @@ func DeriveSharedSecret(privateKeyBase64 string, peerPublicKeyBase64 string) (st
 		}
 	}
 
-	// Try to parse as PKCS8 first (standard format from @ciph/core)
-	privKeyInterface, err := x509.ParsePKCS8PrivateKey(privKeyBytes)
-	var privKey *ecdh.PrivateKey
-
+	privKey, err := parsePrivateKey(privKeyBytes)
 	if err != nil {
-		// Fallback: try raw 32-byte format (legacy)
-		privKey, err = ecdh.P256().NewPrivateKey(privKeyBytes)
-		if err != nil {
-			return "", &CiphError{
-				Code:    CIPH007,
-				Message: "invalid private key format (not PKCS8 or raw)",
-				Err:     err,
-			}
-		}
-	} else {
-		// Extract ECDH private key from parsed interface
-		var ok bool
-		privKey, ok = privKeyInterface.(*ecdh.PrivateKey)
-		if !ok {
-			return "", &CiphError{
-				Code:    CIPH007,
-				Message: "private key is not P-256 ECDH",
-				Err:     nil,
-			}
-		}
+		return "", err
 	}
 
 	pubKey, err := ecdh.P256().NewPublicKey(pubKeyBytes)
@@ -135,6 +176,8 @@ func DeriveSharedSecret(privateKeyBase64 string, peerPublicKeyBase64 string) (st
 }
 
 // DeriveSessionKey derives session_key from raw_shared_secret via HKDF.
+// Uses HKDF-SHA256 with 32 zero-byte salt and info = "ciph-v2-session".
+// Matches @ciph/core deriveSessionKey exactly.
 func DeriveSessionKey(rawSharedBase64 string) (string, error) {
 	rawShared, err := base64.RawURLEncoding.DecodeString(rawSharedBase64)
 	if err != nil {
@@ -145,8 +188,10 @@ func DeriveSessionKey(rawSharedBase64 string) (string, error) {
 		}
 	}
 
+	// Use 32 zero bytes as salt (matches TS: new Uint8Array(32))
+	salt := make([]byte, 32)
 	hash := sha256.New
-	hkdf := hkdf.New(hash, rawShared, nil, []byte("ciph-v2-session"))
+	hkdf := hkdf.New(hash, rawShared, salt, []byte("ciph-v2-session"))
 
 	sessionKey := make([]byte, 32)
 	if _, err := io.ReadFull(hkdf, sessionKey); err != nil {
@@ -161,6 +206,8 @@ func DeriveSessionKey(rawSharedBase64 string) (string, error) {
 }
 
 // DeriveRequestKey derives request_key from session_key + fingerprint_hash via HKDF.
+// Uses HKDF-SHA256 with salt = fingerprint_hash bytes, info = "ciph-v2-request".
+// Matches @ciph/core deriveRequestKey exactly.
 func DeriveRequestKey(sessionKeyBase64 string, fingerprintHash string) (string, error) {
 	sessionKey, err := base64.RawURLEncoding.DecodeString(sessionKeyBase64)
 	if err != nil {
@@ -189,6 +236,7 @@ func DeriveRequestKey(sessionKeyBase64 string, fingerprintHash string) (string, 
 
 // Encrypt encrypts plaintext with AES-256-GCM.
 // Returns base64url(IV[12] + AuthTag[16] + Ciphertext[n])
+// This format matches @ciph/core encrypt exactly.
 func Encrypt(plaintext []byte, keyBase64 string) (*EncryptResult, error) {
 	key, err := base64.RawURLEncoding.DecodeString(keyBase64)
 	if err != nil {
@@ -233,12 +281,22 @@ func Encrypt(plaintext []byte, keyBase64 string) (*EncryptResult, error) {
 		}
 	}
 
-	ciphertext := gcm.Seal(nil, iv, plaintext, nil)
-	// ciphertext already contains: nonce || ciphertext (from Seal)
-	// GCM Seal appends auth tag to the ciphertext
-	// So we need: IV || ciphertext (which includes auth tag)
+	// gcm.Seal produces: ciphertext_data + auth_tag (tag is appended at end)
+	sealed := gcm.Seal(nil, iv, plaintext, nil)
 
-	combined := append(iv, ciphertext...)
+	// sealed = data[n] + tag[16]
+	// We need: IV[12] + Tag[16] + Data[n] (to match @ciph/core format)
+	tagSize := gcm.Overhead() // 16
+	dataLen := len(sealed) - tagSize
+	data := sealed[:dataLen]
+	tag := sealed[dataLen:]
+
+	// Assemble: IV + Tag + Data
+	combined := make([]byte, 12+tagSize+dataLen)
+	copy(combined[0:12], iv)
+	copy(combined[12:12+tagSize], tag)
+	copy(combined[12+tagSize:], data)
+
 	encoded := base64.RawURLEncoding.EncodeToString(combined)
 
 	return &EncryptResult{
@@ -246,7 +304,8 @@ func Encrypt(plaintext []byte, keyBase64 string) (*EncryptResult, error) {
 	}, nil
 }
 
-// Decrypt decrypts base64url(IV + AuthTag + Ciphertext) with AES-256-GCM.
+// Decrypt decrypts base64url(IV[12] + AuthTag[16] + Ciphertext[n]) with AES-256-GCM.
+// Accepts the @ciph/core format: IV[12] + AuthTag[16] + Data[n].
 func Decrypt(ciphertextBase64 string, keyBase64 string) (*DecryptResult, error) {
 	key, err := base64.RawURLEncoding.DecodeString(keyBase64)
 	if err != nil {
@@ -273,7 +332,8 @@ func Decrypt(ciphertextBase64 string, keyBase64 string) (*DecryptResult, error) 
 		}
 	}
 
-	if len(combined) < 12 {
+	// Format: IV[12] + AuthTag[16] + Data[n]
+	if len(combined) < 12+16 {
 		return nil, &CiphError{
 			Code:    CIPH004,
 			Message: "ciphertext too short",
@@ -281,7 +341,8 @@ func Decrypt(ciphertextBase64 string, keyBase64 string) (*DecryptResult, error) 
 	}
 
 	iv := combined[:12]
-	ciphertext := combined[12:]
+	tag := combined[12:28]
+	data := combined[28:]
 
 	block, err := aes.NewCipher(key)
 	if err != nil {
@@ -301,7 +362,12 @@ func Decrypt(ciphertextBase64 string, keyBase64 string) (*DecryptResult, error) 
 		}
 	}
 
-	plaintext, err := gcm.Open(nil, iv, ciphertext, nil)
+	// gcm.Open expects: data + tag (Go standard GCM format)
+	sealedForOpen := make([]byte, len(data)+len(tag))
+	copy(sealedForOpen, data)
+	copy(sealedForOpen[len(data):], tag)
+
+	plaintext, err := gcm.Open(nil, iv, sealedForOpen, nil)
 	if err != nil {
 		return nil, &CiphError{
 			Code:    CIPH004,

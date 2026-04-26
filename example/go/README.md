@@ -71,7 +71,7 @@ go run cmd/generate-keys/main.go
 Output:
 ```
 CIPH_PRIVATE_KEY=UPEh_68Fe7YljzZUvyU_ME5N9LQoFa7Laf8Ox41P_NM
-VITE_CIPH_SERVER_PUBLIC_KEY=BD-krXaQ80ls0m2I...
+CIPH_PUBLIC_KEY=BD-krXaQ80ls0m2I...
 ```
 
 **2. Create .env:**
@@ -96,7 +96,7 @@ import { createClient } from '@ciph/client'
 
 const ciph = createClient({
   baseURL: 'http://localhost:3001',
-  serverPublicKey: process.env.VITE_CIPH_SERVER_PUBLIC_KEY,
+  serverPublicKey: process.env.CIPH_PUBLIC_KEY,
 })
 
 // Use like axios

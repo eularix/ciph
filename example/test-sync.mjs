@@ -23,14 +23,14 @@ const goEnv = loadEnv(path.join(__dirname, "go", ".env"))
 const reactEnv = loadEnv(path.join(__dirname, "react", ".env"))
 
 const goPrivKey = goEnv.CIPH_PRIVATE_KEY?.trim()
-const reactPubKey = reactEnv.VITE_CIPH_SERVER_PUBLIC_KEY?.trim()
+const reactPubKey = reactEnv.CIPH_PUBLIC_KEY?.trim()
 
 console.log("=== Key Sync Test ===\n")
 
 if (!goPrivKey || !reactPubKey) {
   console.error("❌ Keys missing from .env")
   console.error(`Go CIPH_PRIVATE_KEY: ${goPrivKey ? "✓" : "✗"}`)
-  console.error(`React VITE_CIPH_SERVER_PUBLIC_KEY: ${reactPubKey ? "✓" : "✗"}`)
+  console.error(`React CIPH_PUBLIC_KEY: ${reactPubKey ? "✓" : "✗"}`)
   process.exit(1)
 }
 

@@ -57,7 +57,7 @@ const app = createApp(App)
 
 app.use(CiphPlugin, {
   baseURL: 'https://api.example.com',
-  serverPublicKey: process.env.VITE_CIPH_SERVER_PUBLIC_KEY,
+  serverPublicKey: process.env.CIPH_PUBLIC_KEY,
   fingerprintOptions: { includeScreen: true },
   devtools: { enabled: true, position: 'bottom-right' },
 })

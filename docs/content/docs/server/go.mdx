@@ -1,0 +1,161 @@
+---
+title: Go
+---
+
+Server-side encryption middleware for Go. Automatically decrypts incoming requests and encrypts outgoing responses using the v2 ECDH flow. Provides seamless integration with standard `net/http`.
+
+## Quick Start
+
+### 1. Install the Package
+
+Install the Ciph Go module inside your project:
+
+```bash
+go get github.com/Eularix/ciph/modules/ciph-go/middleware
+```
+
+### 2. Generate Key Pair
+
+The Go backend requires a PKCS8 P-256 private key. You can generate one using the built-in CLI:
+
+```bash
+go run github.com/Eularix/ciph/modules/ciph-go/cmd/generate-keys@latest
+```
+
+This will generate a `.env` format output with `CIPH_PRIVATE_KEY` for your backend and `PUBLIC_KEY` for your frontend.
+
+### 3. Mount the Middleware
+
+Wrap your `http.ServeMux` or `http.Handler` with the Ciph middleware:
+
+```go
+package main
+
+import (
+	"encoding/json"
+	"log"
+	"net/http"
+	"os"
+
+	"github.com/Eularix/ciph/modules/ciph-go/middleware"
+)
+
+func main() {
+	// 1. Initialize Configuration
+	config := &middleware.Config{
+		PrivateKey:        os.Getenv("CIPH_PRIVATE_KEY"),
+		StrictFingerprint: true, // Validates User-Agent for added security
+		MaxPayloadSize:    10 * 1024 * 1024, // 10MB
+		ExcludeRoutes:     []string{"/health", "/ciph-public-key", "/ciph", "/ciph/*"},
+	}
+
+	ciphMw, err := middleware.New(config)
+	if err != nil {
+		log.Fatalf("Failed to initialize Ciph middleware: %v", err)
+	}
+
+	mux := http.NewServeMux()
+
+	// 2. Add Handlers
+	mux.HandleFunc("/api/users", func(w http.ResponseWriter, r *http.Request) {
+		// Request body is automatically decrypted
+		var data map[string]interface{}
+		json.NewDecoder(r.Body).Decode(&data)
+
+		// Response will be automatically encrypted 
+		w.Header().Set("Content-Type", "application/json")
+		json.NewEncoder(w).Encode(map[string]interface{}{"status": "success"})
+	})
+
+	// 3. Wrap Mux with Middleware
+	encryptedHandler := ciphMw.Wrap(mux)
+
+	log.Printf("Server starting on :3001")
+	http.ListenAndServe(":3001", encryptedHandler)
+}
+```
+
+<Callout type="info">
+The actual public key must be shared with the frontend. The middleware automatically handles serving the public key at the `/ciph-public-key` endpoint to simplify key rotation.
+</Callout>
+
+## Configuration Options
+
+When setting up `middleware.Config`, you can provide these options:
+
+```go
+type Config struct {
+	// Base64url-encoded P-256 private key (PKCS8) - REQUIRED
+	PrivateKey string   
+	
+	// Routes that bypass encryption entirely. Supports exact matches and wildcards (/*).
+	// Default: ["/health", "/ciph-public-key", "/ciph", "/ciph/*"]
+	ExcludeRoutes []string 
+	
+	// Validates the User-Agent signature. 
+	// Default: true
+	StrictFingerprint bool     
+	
+	// Maximum allowed payload size in bytes. 
+	// Default: 10485760 (10MB)
+	MaxPayloadSize int64    
+	
+	// Allow unencrypted requests for migration purposes. 
+	// Default: false
+	AllowUnencrypted bool     
+}
+```
+
+## Excluding Routes
+
+To disable encryption on certain routes, (like webhooks or health checks), add them to the `ExcludeRoutes` config.
+
+```go
+config := &middleware.Config{
+	PrivateKey: os.Getenv("CIPH_PRIVATE_KEY"),
+	ExcludeRoutes: []string{
+		"/health",        // Exact match
+		"/webhooks/*",    // Wildcard match for paths like /webhooks/stripe
+	},
+}
+```
+
+<Callout type="warning">
+Routes added to `ExcludeRoutes` completely bypass the middleware. Ensure they are not used to process or receive sensitive plaintext data.
+</Callout>
+
+## DevTools Inspector
+
+Easily inspect incoming and outgoing encrypted traffic with the built-in Ciph DevTools. Because traffic from the frontend is encrypted natively, typical network debuggers will only show encrypted ciphertexts. The DevTools inspector displays the decrypted payloads in isolation for easy debugging during development.
+
+```go
+// 1. Enable dev tools before setting up routes (specify max log count)
+ciphMw.EnableDevTools(500)
+
+// 2. Mount the DevTools UI and API under /ciph/
+if devTools := ciphMw.GetDevToolsBuffer(); devTools != nil {
+	devtoolsHandler := ciphMw.RegisterDevToolsRoutes(devTools)
+	mux.Handle("/ciph", devtoolsHandler)      // UI 
+	mux.Handle("/ciph/logs", devtoolsHandler) // API
+}
+```
+
+Open `http://localhost:3001/ciph` in your browser. 
+
+<Callout type="tip">
+Only enable the inspector in development environments. Do not call `.EnableDevTools()` in production.
+</Callout>
+
+## How It Works
+
+### Request Flow (Decryption)
+1. **Reads Headers** — Obtains `X-Client-PublicKey` and the encrypted `X-Fingerprint` payload. 
+2. **Generates Shared Secret** — Derives the shared secret via ECDH using the server's private key and checking the client's public key.
+3. **Validates the Fingerprint** — Compares the User-Agent locally against the fingerprint hash.
+4. **Derives Key** — Re-derives a one-time request AES-256-GCM key.
+5. **Decrypts and Re-wraps Body** — Performs AES decryption and overwrites the `http.Request.Body` for downstream handlers.
+
+### Response Flow (Encryption)
+1. **Intercepts Response** — The middleware buffers the response of standard handlers instead of writing them to the network.
+2. **Encrypts Data** — Uses the generated AES key to encrypt the entire buffered payload.
+3. **Rewrites Wire Payload** — Transmits `{ "status": "encrypted", "data": "..." }` formatted data down to the client.

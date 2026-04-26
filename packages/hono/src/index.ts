@@ -16,10 +16,10 @@ export type { CiphDevtoolsConfig }
  * Setup (recommended - use with key generation CLI):
  * ```ts
  * // 1. Run: npx ciph generate-keys
- * // 2. Get both CIPH_PRIVATE_KEY and VITE_CIPH_SERVER_PUBLIC_KEY from output
+ * // 2. Get both CIPH_PRIVATE_KEY and CIPH_PUBLIC_KEY from output
  * // 3. In your Hono app:
  *
- * const publicKey = process.env.VITE_CIPH_SERVER_PUBLIC_KEY
+ * const publicKey = process.env.CIPH_PUBLIC_KEY
  * app.get("/ciph-public-key", ciphPublicKeyEndpoint(publicKey))
  * app.use("*", ciph({ privateKey: process.env.CIPH_PRIVATE_KEY }))
  * ```
@@ -28,7 +28,7 @@ export function ciphPublicKeyEndpoint(publicKey: string): MiddlewareHandler {
   if (!publicKey || publicKey.trim().length === 0) {
     throw new Error(
       "[ciph] ciphPublicKeyEndpoint requires a non-empty publicKey. " +
-        "Run 'npx ciph generate-keys' to generate both keys, then provide VITE_CIPH_SERVER_PUBLIC_KEY."
+        "Run 'npx ciph generate-keys' to generate both keys, then provide CIPH_PUBLIC_KEY."
     )
   }
   return async (c: Context): Promise<Response> => {

@@ -153,7 +153,7 @@ Wraps axios. Replaces `axios` instance in frontend code. Intercepts all requests
 // lib/ciph.ts
 export const ciph = createClient({
   baseURL: import.meta.env.VITE_API_URL,
-  serverPublicKey: import.meta.env.VITE_CIPH_SERVER_PUBLIC_KEY,
+  serverPublicKey: import.meta.env.CIPH_PUBLIC_KEY,
   // or: publicKeyEndpoint: "/ciph/public-key" (optional, fetches dynamically)
 })
 ```
@@ -362,13 +362,13 @@ CIPH_PRIVATE_KEY=base64url-encoded-P256-private-key
 
 **Frontend (.env):**
 ```env
-VITE_CIPH_SERVER_PUBLIC_KEY=base64url-encoded-P256-public-key
+CIPH_PUBLIC_KEY=base64url-encoded-P256-public-key
 ```
 
 **Key generation:**
 ```bash
 npx ciph generate-keys
-# Outputs CIPH_PRIVATE_KEY + VITE_CIPH_SERVER_PUBLIC_KEY
+# Outputs CIPH_PRIVATE_KEY + CIPH_PUBLIC_KEY
 ```
 
 **Security:**
